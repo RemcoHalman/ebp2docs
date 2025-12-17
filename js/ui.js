@@ -82,6 +82,9 @@ function renderChannels(channelGroups, unitTypeId) {
     if (unitTypeId === '16' || unitTypeId === '20') {
         // Connect 50: show only group 1
         groupsToRender = channelGroups.slice(0, 1);
+    } else if (unitTypeId === '101') {
+        // MCUv1 : show no channels
+        groupsToRender = [];
     } else if (unitTypeId === '105') {
         // MCUv2: show groups 1 and 2
         groupsToRender = channelGroups.slice(0, 2);
@@ -94,6 +97,11 @@ function renderChannels(channelGroups, unitTypeId) {
     groupsToRender.forEach(group => {
         totalChannels += group.channels.length;
     });
+
+    // If no channels to display, don't render the section at all
+    if (totalChannels === 0) {
+        return '';
+    }
 
     let html = `
         <div class="expandable-section">
