@@ -3,38 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmpirBus Project Viewer (ebp2docs)</title>
-    <meta name="description" content="EmpirBus Project Viewer (ebp2docs) – GitHub Pages site">
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 100px auto;
-            padding: 40px;
-            background: #ffffff;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 16px;
-        }
-        p {
-            font-size: 1.1rem;
-        }
-    </style>
+    <title>EmpirBus Project Viewer - ebp2docs</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
 </head>
 <body>
     <div class="container">
-        <h1>EmpirBus Project Viewer</h1>
-        <p><strong>ebp2docs</strong></p>
-        <p>Hello, world! This is the GitHub Pages site for the EmpirBus Project Viewer.</p>
+        <div class="header">
+            <h1>🔧 EmpirBus Project Viewer</h1>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p><strong>Click to upload</strong> or drag and drop your .ebp file here</p>
+                <input type="file" id="fileInput" accept=".ebp">
+            </div>
+        </div>
+
+        <!-- Toolbar (hidden until file is loaded) -->
+        <div class="toolbar" id="toolbar" style="display: none;">
+            <input type="text" 
+                   class="search-box" 
+                   id="searchBox" 
+                   placeholder="🔍 Search units or channels...">
+            <button class="button button-secondary" id="exportPDF">
+                📄 Export PDF
+            </button>
+        </div>
+
+        <!-- Results container -->
+        <div class="results" id="results"></div>
     </div>
+
+    <!-- Import modules -->
+    <script type="module">
+        import { parseUnits, parseProjectMetadata, validateEBP } from './js/parser.js';
+        import { displayUnits, displayError, displayMetadata } from './js/ui.js';
+        import { downloadPDF, filterUnits, debounce } from './js/utils.js';
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const results = document.getElementById('results');
+        const toolbar = document.getElementById('toolbar');
+        const searchBox = document.getElementById('searchBox');
+        const exportPDFBtn = document.getElementById('exportPDF');
+
+        // Store parsed data globally
+        let currentUnits = [];
+        let allUnits = [];
+        let currentMetadata = null;
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Handle file upload
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    
+                    // Validate first
+                    const validation = validateEBP(content);
+                    if (!validation.isValid) {
+                        displayError(`Invalid EBP file: ${validation.errors.join(', ')}`, results);
+                        return;
+                    }
+
+                    // Parse units and metadata
+                    allUnits = parseUnits(content);
+                    currentUnits = allUnits;
+                    currentMetadata = parseProjectMetadata(content);
+
+                    // Display results with metadata
+                    displayUnits(currentUnits, results, currentMetadata);
+
+                    // Show toolbar
+                    toolbar.style.display = 'flex';
+
+                    // Reset search box
+                    searchBox.value = '';
+
+                } catch (error) {
+                    displayError(error.message, results);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Search functionality
+        searchBox.addEventListener('input', debounce((e) => {
+            const searchTerm = e.target.value;
+            currentUnits = filterUnits(allUnits, searchTerm);
+            displayUnits(currentUnits, results, currentMetadata);
+        }, 300));
+
+        // Export PDF
+        exportPDFBtn.addEventListener('click', () => {
+            downloadPDF(currentMetadata);
+        });
+    </script>
 </body>
 </html>
