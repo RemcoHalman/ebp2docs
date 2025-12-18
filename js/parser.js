@@ -39,10 +39,9 @@ export function parseUnits(xmlString) {
             name: unit.getAttribute('name') || 'N/A',
             unitTypeId: unit.getAttribute('unitTypeId') || 'N/A',
             standardUnitVariantNumber: unit.getAttribute('standardUnitVariantNumber') || 'N/A',
-            channels: parseChannels(unit),
-            alarms: parseAlarms(unit)
+            channels: parseChannels(unit)
         };
-        console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId, 'Alarms:', unitData.alarms.length);
+        console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId);
         units.push(unitData);
     }
 
@@ -91,55 +90,72 @@ function parseChannels(unitElement) {
 }
 
 /**
- * Parse alarm information for a unit
- * Looks for components with componentId="1292" and extracts:
+ * Parse alarm information from schemas
+ * Looks for components with componentId="1292" in all schema sections and extracts:
  * - property id="4" for alarm ID
  * - property id="31" for alarm name
- * @param {Element} unitElement - Unit XML element
+ * @param {string} xmlString - XML content as string
  * @returns {Array} Array of alarm objects sorted by alarm ID
  */
-function parseAlarms(unitElement) {
+export function parseAlarms(xmlString) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
     const alarms = [];
-    const componentElements = unitElement.getElementsByTagName('component');
 
-    for (let i = 0; i < componentElements.length; i++) {
-        const component = componentElements[i];
-        const componentId = component.getAttribute('componentId');
+    // Get all schema elements
+    const schemaElements = xmlDoc.getElementsByTagName('schema');
 
-        // Only process components with componentId="1292"
-        if (componentId === '1292') {
-            const componentRevision = component.getAttribute('componentRevision') || 'N/A';
-            const id = component.getAttribute('id') || 'N/A';
+    for (let s = 0; s < schemaElements.length; s++) {
+        const schema = schemaElements[s];
+        const schemaName = schema.getAttribute('name') || 'Unknown';
 
-            // Get the properties container
-            const propertiesElement = component.querySelector('properties');
-            if (propertiesElement) {
-                const propertyElements = propertiesElement.getElementsByTagName('property');
+        // Get components within this schema
+        const componentsContainer = schema.querySelector('components');
+        if (!componentsContainer) continue;
 
-                let alarmId = 'N/A';
-                let alarmName = 'N/A';
+        const componentElements = componentsContainer.getElementsByTagName('component');
 
-                // Extract both alarm ID (property 4) and alarm name (property 31)
-                for (let j = 0; j < propertyElements.length; j++) {
-                    const property = propertyElements[j];
-                    const propertyId = property.getAttribute('id');
+        for (let i = 0; i < componentElements.length; i++) {
+            const component = componentElements[i];
+            const componentId = component.getAttribute('componentId');
 
-                    if (propertyId === '4') {
-                        alarmId = property.getAttribute('value') || 'N/A';
-                    } else if (propertyId === '31') {
-                        alarmName = property.getAttribute('value') || 'N/A';
+            // Only process components with componentId="1292"
+            if (componentId === '1292') {
+                const componentRevision = component.getAttribute('componentRevision') || 'N/A';
+                const id = component.getAttribute('id') || 'N/A';
+
+                // Get the properties container
+                const propertiesElement = component.querySelector('properties');
+                if (propertiesElement) {
+                    const propertyElements = propertiesElement.getElementsByTagName('property');
+
+                    let alarmId = 'N/A';
+                    let alarmName = 'N/A';
+
+                    // Extract both alarm ID (property 4) and alarm name (property 31)
+                    for (let j = 0; j < propertyElements.length; j++) {
+                        const property = propertyElements[j];
+                        const propertyId = property.getAttribute('id');
+
+                        if (propertyId === '4') {
+                            alarmId = property.getAttribute('value') || 'N/A';
+                        } else if (propertyId === '31') {
+                            alarmName = property.getAttribute('value') || 'N/A';
+                        }
                     }
-                }
 
-                // Only add if we found at least one of the properties
-                if (alarmId !== 'N/A' || alarmName !== 'N/A') {
-                    alarms.push({
-                        componentId: componentId,
-                        componentRevision: componentRevision,
-                        componentInstanceId: id,
-                        alarmId: alarmId,
-                        alarmName: alarmName
-                    });
+                    // Only add if we found at least one of the properties
+                    if (alarmId !== 'N/A' || alarmName !== 'N/A') {
+                        alarms.push({
+                            schemaName: schemaName,
+                            componentId: componentId,
+                            componentRevision: componentRevision,
+                            componentInstanceId: id,
+                            alarmId: alarmId,
+                            alarmName: alarmName
+                        });
+                    }
                 }
             }
         }
@@ -152,6 +168,7 @@ function parseAlarms(unitElement) {
         return idA - idB;
     });
 
+    console.log(`Found ${alarms.length} alarms across all schemas`);
     return alarms;
 }
 

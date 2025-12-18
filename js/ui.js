@@ -11,8 +11,9 @@ import { escapeHtml, getDirectionIcon, getDirectionColor } from './utils.js';
  * @param {HTMLElement} container - Container element
  * @param {Object} metadata - Optional project metadata to display
  * @param {boolean} hasSearch - Whether search is active (auto-expands sections)
+ * @param {Array} alarms - Optional array of alarm objects
  */
-export function displayUnits(units, container, metadata = null, hasSearch = false) {
+export function displayUnits(units, container, metadata = null, hasSearch = false, alarms = []) {
     container.style.display = 'block';
 
     let html = '';
@@ -20,6 +21,11 @@ export function displayUnits(units, container, metadata = null, hasSearch = fals
     // Add metadata if provided
     if (metadata) {
         html += renderMetadata(metadata, units.length);
+    }
+
+    // Add project-level alarms if provided
+    if (alarms && alarms.length > 0) {
+        html += renderProjectAlarms(alarms, hasSearch);
     }
 
     units.forEach((unit) => {
@@ -61,19 +67,18 @@ function renderUnitCard(unit, hasSearch = false) {
                 </div>
             </div>
 
-            ${renderAlarms(unit.alarms, hasSearch)}
             ${renderChannels(unit.channels, unit.unitTypeId, hasSearch)}
         </div>
     `;
 }
 
 /**
- * Render alarms section
- * @param {Array} alarms - Array of alarm objects
+ * Render project-level alarms section
+ * @param {Array} alarms - Array of alarm objects from all schemas
  * @param {boolean} autoExpand - Whether to auto-expand the section
  * @returns {string} HTML string
  */
-function renderAlarms(alarms, autoExpand = false) {
+function renderProjectAlarms(alarms, autoExpand = false) {
     if (!alarms || alarms.length === 0) {
         return '';
     }
@@ -83,38 +88,36 @@ function renderAlarms(alarms, autoExpand = false) {
     const iconSymbol = autoExpand ? '▲' : '▼';
 
     let html = `
-        <div class="expandable-section">
-            <div class="section-header" data-section="alarms">
-                <span class="section-title">🔔 Alarms (${alarms.length})</span>
-                <span class="expand-icon">${iconSymbol}</span>
+        <div class="alarms-card">
+            <div class="alarms-header">
+                <h3>🔔 Alarms</h3>
+                <span class="alarms-count">${alarms.length} alarm${alarms.length !== 1 ? 's' : ''} found</span>
             </div>
-            <div class="section-content" style="display: ${displayStyle};">
-                <div class="alarms-table-container">
-                    <table class="alarms-table">
-                        <thead>
-                            <tr>
-                                <th>Alarm ID</th>
-                                <th>Alarm Name</th>
-                                <th>Component ID</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            <div class="alarms-table-container">
+                <table class="alarms-table">
+                    <thead>
+                        <tr>
+                            <th>Alarm ID</th>
+                            <th>Alarm Name</th>
+                            <th>Schema</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
 
     alarms.forEach((alarm) => {
         html += `
-                            <tr>
-                                <td class="alarm-id-cell">${escapeHtml(alarm.alarmId)}</td>
-                                <td class="alarm-name-cell">${escapeHtml(alarm.alarmName)}</td>
-                                <td class="alarm-component-cell">${escapeHtml(alarm.componentInstanceId)}</td>
-                            </tr>
+                        <tr>
+                            <td class="alarm-id-cell">${escapeHtml(alarm.alarmId)}</td>
+                            <td class="alarm-name-cell">${escapeHtml(alarm.alarmName)}</td>
+                            <td class="alarm-schema-cell">${escapeHtml(alarm.schemaName)}</td>
+                        </tr>
         `;
     });
 
     html += `
-                        </tbody>
-                    </table>
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
