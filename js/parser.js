@@ -92,9 +92,11 @@ function parseChannels(unitElement) {
 
 /**
  * Parse alarm information for a unit
- * Looks for components with componentId="1292" and extracts property id="31" values
+ * Looks for components with componentId="1292" and extracts:
+ * - property id="4" for alarm ID
+ * - property id="31" for alarm name
  * @param {Element} unitElement - Unit XML element
- * @returns {Array} Array of alarm objects
+ * @returns {Array} Array of alarm objects sorted by alarm ID
  */
 function parseAlarms(unitElement) {
     const alarms = [];
@@ -114,26 +116,41 @@ function parseAlarms(unitElement) {
             if (propertiesElement) {
                 const propertyElements = propertiesElement.getElementsByTagName('property');
 
+                let alarmId = 'N/A';
+                let alarmName = 'N/A';
+
+                // Extract both alarm ID (property 4) and alarm name (property 31)
                 for (let j = 0; j < propertyElements.length; j++) {
                     const property = propertyElements[j];
                     const propertyId = property.getAttribute('id');
 
-                    // Only get property with id="31"
-                    if (propertyId === '31') {
-                        const value = property.getAttribute('value') || 'N/A';
-
-                        alarms.push({
-                            componentId: componentId,
-                            componentRevision: componentRevision,
-                            componentInstanceId: id,
-                            propertyId: propertyId,
-                            alarmName: value
-                        });
+                    if (propertyId === '4') {
+                        alarmId = property.getAttribute('value') || 'N/A';
+                    } else if (propertyId === '31') {
+                        alarmName = property.getAttribute('value') || 'N/A';
                     }
+                }
+
+                // Only add if we found at least one of the properties
+                if (alarmId !== 'N/A' || alarmName !== 'N/A') {
+                    alarms.push({
+                        componentId: componentId,
+                        componentRevision: componentRevision,
+                        componentInstanceId: id,
+                        alarmId: alarmId,
+                        alarmName: alarmName
+                    });
                 }
             }
         }
     }
+
+    // Sort alarms by alarm ID (numeric sort)
+    alarms.sort((a, b) => {
+        const idA = parseInt(a.alarmId) || 0;
+        const idB = parseInt(b.alarmId) || 0;
+        return idA - idB;
+    });
 
     return alarms;
 }

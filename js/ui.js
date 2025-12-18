@@ -91,22 +91,31 @@ function renderAlarms(alarms, autoExpand = false) {
                 <span class="expand-icon">${iconSymbol}</span>
             </div>
             <div class="section-content" style="display: ${displayStyle};">
-                <div class="alarms-grid">
+                <div class="alarms-table-container">
+                    <table class="alarms-table">
+                        <thead>
+                            <tr>
+                                <th>Alarm ID</th>
+                                <th>Alarm Name</th>
+                                <th>Component ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
     `;
 
-    alarms.forEach((alarm, index) => {
+    alarms.forEach((alarm) => {
         html += `
-            <div class="alarm-item">
-                <div class="alarm-header">
-                    <span class="alarm-number">#${index + 1}</span>
-                    <span class="alarm-component-id">Component ID: ${escapeHtml(alarm.componentInstanceId)}</span>
-                </div>
-                <div class="alarm-name">${escapeHtml(alarm.alarmName)}</div>
-            </div>
+                            <tr>
+                                <td class="alarm-id-cell">${escapeHtml(alarm.alarmId)}</td>
+                                <td class="alarm-name-cell">${escapeHtml(alarm.alarmName)}</td>
+                                <td class="alarm-component-cell">${escapeHtml(alarm.componentInstanceId)}</td>
+                            </tr>
         `;
     });
 
     html += `
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
