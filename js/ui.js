@@ -10,8 +10,9 @@ import { escapeHtml, getDirectionIcon, getDirectionColor } from './utils.js';
  * @param {Array} units - Array of unit objects
  * @param {HTMLElement} container - Container element
  * @param {Object} metadata - Optional project metadata to display
+ * @param {boolean} hasSearch - Whether search is active (auto-expands sections)
  */
-export function displayUnits(units, container, metadata = null) {
+export function displayUnits(units, container, metadata = null, hasSearch = false) {
     container.style.display = 'block';
 
     let html = '';
@@ -24,7 +25,7 @@ export function displayUnits(units, container, metadata = null) {
     html += `<div class="summary">Found ${units.length} unit${units.length !== 1 ? 's' : ''}</div>`;
 
     units.forEach((unit) => {
-        html += renderUnitCard(unit);
+        html += renderUnitCard(unit, hasSearch);
     });
 
     container.innerHTML = html;
@@ -36,16 +37,17 @@ export function displayUnits(units, container, metadata = null) {
 /**
  * Render a single unit card
  * @param {Object} unit - Unit object
+ * @param {boolean} hasSearch - Whether search is active
  * @returns {string} HTML string
  */
-function renderUnitCard(unit) {
+function renderUnitCard(unit, hasSearch = false) {
     return `
         <div class="unit-card">
             <div class="unit-header">
                 <div class="unit-name">${escapeHtml(unit.name)}</div>
                 <div class="unit-id">ID: ${escapeHtml(unit.id)}</div>
             </div>
-            
+
             <div class="unit-details">
                 <div class="detail-item">
                     <div class="detail-label">Serial Number</div>
@@ -61,7 +63,7 @@ function renderUnitCard(unit) {
                 </div>
             </div>
 
-            ${renderChannels(unit.channels, unit.unitTypeId)}
+            ${renderChannels(unit.channels, unit.unitTypeId, hasSearch)}
         </div>
     `;
 }
@@ -70,9 +72,10 @@ function renderUnitCard(unit) {
  * Render channels section
  * @param {Array} channelGroups - Array of channel groups
  * @param {string} unitTypeId - The unit type ID
+ * @param {boolean} autoExpand - Whether to auto-expand the section
  * @returns {string} HTML string
  */
-function renderChannels(channelGroups, unitTypeId) {
+function renderChannels(channelGroups, unitTypeId, autoExpand = false) {
     if (!channelGroups || channelGroups.length === 0) {
         return '';
     }
@@ -103,13 +106,17 @@ function renderChannels(channelGroups, unitTypeId) {
         return '';
     }
 
+    // Auto-expand when search is active
+    const displayStyle = autoExpand ? 'block' : 'none';
+    const iconSymbol = autoExpand ? '▲' : '▼';
+
     let html = `
         <div class="expandable-section">
             <div class="section-header" data-section="channels">
                 <span class="section-title">📡 Channels (${totalChannels})</span>
-                <span class="expand-icon">▼</span>
+                <span class="expand-icon">${iconSymbol}</span>
             </div>
-            <div class="section-content" style="display: none;">
+            <div class="section-content" style="display: ${displayStyle};">
     `;
 
     groupsToRender.forEach((group, groupIndex) => {
