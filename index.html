@@ -44,7 +44,7 @@
 
     <!-- Import modules -->
     <script type="module">
-        import { parseUnits, parseProjectMetadata, validateEBP } from './js/parser.js';
+        import { parseUnits, parseProjectMetadata, parseAlarms, validateEBP } from './js/parser.js';
         import { displayUnits, displayError, displayMetadata } from './js/ui.js';
         import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
 
@@ -60,6 +60,7 @@
         let currentUnits = [];
         let allUnits = [];
         let currentMetadata = null;
+        let currentAlarms = [];
 
         // Click to upload
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -101,13 +102,14 @@
                         return;
                     }
 
-                    // Parse units and metadata
+                    // Parse units, metadata, and alarms
                     allUnits = parseUnits(content);
                     currentUnits = allUnits;
                     currentMetadata = parseProjectMetadata(content);
+                    currentAlarms = parseAlarms(content);
 
-                    // Display results with metadata
-                    displayUnits(currentUnits, results, currentMetadata);
+                    // Display results with metadata and alarms
+                    displayUnits(currentUnits, results, currentMetadata, false, currentAlarms);
 
                     // Show toolbar
                     toolbar.style.display = 'flex';
@@ -127,7 +129,7 @@
             const searchTerm = e.target.value;
             const { units: filtered, hasSearch } = filterUnitsAndChannels(allUnits, searchTerm);
             currentUnits = filtered;
-            displayUnits(currentUnits, results, currentMetadata, hasSearch);
+            displayUnits(currentUnits, results, currentMetadata, hasSearch, currentAlarms);
         }, 300));
 
         // Export PDF
