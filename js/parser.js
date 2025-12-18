@@ -39,9 +39,10 @@ export function parseUnits(xmlString) {
             name: unit.getAttribute('name') || 'N/A',
             unitTypeId: unit.getAttribute('unitTypeId') || 'N/A',
             standardUnitVariantNumber: unit.getAttribute('standardUnitVariantNumber') || 'N/A',
-            channels: parseChannels(unit)
+            channels: parseChannels(unit),
+            alarms: parseAlarms(unit)
         };
-        console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId);
+        console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId, 'Alarms:', unitData.alarms.length);
         units.push(unitData);
     }
 
@@ -87,6 +88,54 @@ function parseChannels(unitElement) {
     }
 
     return channelGroups;
+}
+
+/**
+ * Parse alarm information for a unit
+ * Looks for components with componentId="1292" and extracts property id="31" values
+ * @param {Element} unitElement - Unit XML element
+ * @returns {Array} Array of alarm objects
+ */
+function parseAlarms(unitElement) {
+    const alarms = [];
+    const componentElements = unitElement.getElementsByTagName('component');
+
+    for (let i = 0; i < componentElements.length; i++) {
+        const component = componentElements[i];
+        const componentId = component.getAttribute('componentId');
+
+        // Only process components with componentId="1292"
+        if (componentId === '1292') {
+            const componentRevision = component.getAttribute('componentRevision') || 'N/A';
+            const id = component.getAttribute('id') || 'N/A';
+
+            // Get the properties container
+            const propertiesElement = component.querySelector('properties');
+            if (propertiesElement) {
+                const propertyElements = propertiesElement.getElementsByTagName('property');
+
+                for (let j = 0; j < propertyElements.length; j++) {
+                    const property = propertyElements[j];
+                    const propertyId = property.getAttribute('id');
+
+                    // Only get property with id="31"
+                    if (propertyId === '31') {
+                        const value = property.getAttribute('value') || 'N/A';
+
+                        alarms.push({
+                            componentId: componentId,
+                            componentRevision: componentRevision,
+                            componentInstanceId: id,
+                            propertyId: propertyId,
+                            alarmName: value
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return alarms;
 }
 
 /**

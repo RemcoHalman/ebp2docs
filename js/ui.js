@@ -63,9 +63,56 @@ function renderUnitCard(unit, hasSearch = false) {
                 </div>
             </div>
 
+            ${renderAlarms(unit.alarms, hasSearch)}
             ${renderChannels(unit.channels, unit.unitTypeId, hasSearch)}
         </div>
     `;
+}
+
+/**
+ * Render alarms section
+ * @param {Array} alarms - Array of alarm objects
+ * @param {boolean} autoExpand - Whether to auto-expand the section
+ * @returns {string} HTML string
+ */
+function renderAlarms(alarms, autoExpand = false) {
+    if (!alarms || alarms.length === 0) {
+        return '';
+    }
+
+    // Auto-expand when search is active
+    const displayStyle = autoExpand ? 'block' : 'none';
+    const iconSymbol = autoExpand ? '▲' : '▼';
+
+    let html = `
+        <div class="expandable-section">
+            <div class="section-header" data-section="alarms">
+                <span class="section-title">🔔 Alarms (${alarms.length})</span>
+                <span class="expand-icon">${iconSymbol}</span>
+            </div>
+            <div class="section-content" style="display: ${displayStyle};">
+                <div class="alarms-grid">
+    `;
+
+    alarms.forEach((alarm, index) => {
+        html += `
+            <div class="alarm-item">
+                <div class="alarm-header">
+                    <span class="alarm-number">#${index + 1}</span>
+                    <span class="alarm-component-id">Component ID: ${escapeHtml(alarm.componentInstanceId)}</span>
+                </div>
+                <div class="alarm-name">${escapeHtml(alarm.alarmName)}</div>
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+            </div>
+        </div>
+    `;
+
+    return html;
 }
 
 /**

@@ -104,6 +104,55 @@
     padding: 15px 0;
 }
 
+/* Alarms Grid */
+.alarms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.alarm-item {
+    background: #fff8e1;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #ff9800;
+    transition: all var(--transition-speed) ease;
+}
+
+.alarm-item:hover {
+    background: #fff3cd;
+    transform: translateX(5px);
+}
+
+.alarm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.alarm-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
+    background: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.alarm-component-id {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f57c00;
+}
+
+.alarm-name {
+    font-size: 14px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
 /* Channel Groups */
 .channel-group {
     margin-bottom: 20px;
@@ -283,6 +332,10 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+    }
+
+    .alarms-grid {
+        grid-template-columns: 1fr;
     }
 
     .channels-grid {
