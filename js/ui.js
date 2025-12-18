@@ -19,10 +19,8 @@ export function displayUnits(units, container, metadata = null, hasSearch = fals
 
     // Add metadata if provided
     if (metadata) {
-        html += renderMetadata(metadata);
+        html += renderMetadata(metadata, units.length);
     }
-
-    html += `<div class="summary">Found ${units.length} unit${units.length !== 1 ? 's' : ''}</div>`;
 
     units.forEach((unit) => {
         html += renderUnitCard(unit, hasSearch);
@@ -230,15 +228,20 @@ export function displayError(message, container) {
 /**
  * Render project metadata HTML
  * @param {Object} metadata - Project metadata object
+ * @param {number} unitCount - Number of units found
  * @returns {string} HTML string
  */
-function renderMetadata(metadata) {
+function renderMetadata(metadata, unitCount = 0) {
     if (!metadata) return '';
 
     return `
         <div class="metadata-card">
             <h3>📋 Project Information</h3>
             <div class="metadata-grid">
+                <div class="metadata-item">
+                    <span class="metadata-label">Units Found:</span>
+                    <span class="metadata-value">${unitCount}</span>
+                </div>
                 <div class="metadata-item">
                     <span class="metadata-label">Firmware:</span>
                     <span class="metadata-value">${escapeHtml(metadata.firmware)}</span>
