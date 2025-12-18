@@ -46,7 +46,7 @@
     <script type="module">
         import { parseUnits, parseProjectMetadata, validateEBP } from './js/parser.js';
         import { displayUnits, displayError, displayMetadata } from './js/ui.js';
-        import { downloadPDF, filterUnits, debounce } from './js/utils.js';
+        import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
 
         // DOM elements
         const uploadArea = document.getElementById('uploadArea');
@@ -125,8 +125,9 @@
         // Search functionality
         searchBox.addEventListener('input', debounce((e) => {
             const searchTerm = e.target.value;
-            currentUnits = filterUnits(allUnits, searchTerm);
-            displayUnits(currentUnits, results, currentMetadata);
+            const { units: filtered, hasSearch } = filterUnitsAndChannels(allUnits, searchTerm);
+            currentUnits = filtered;
+            displayUnits(currentUnits, results, currentMetadata, hasSearch);
         }, 300));
 
         // Export PDF

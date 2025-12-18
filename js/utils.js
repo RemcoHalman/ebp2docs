@@ -146,7 +146,7 @@ export function getStatistics(units) {
 }
 
 /**
- * Filter units by search term
+ * Filter units by search term (legacy - use filterUnitsAndChannels instead)
  * @param {Array} units - Array of units
  * @param {string} searchTerm - Search term
  * @returns {Array} Filtered units
@@ -177,6 +177,51 @@ export function filterUnits(units, searchTerm) {
 
         return false;
     });
+}
+
+/**
+ * Filter units and channels by search term
+ * Returns units with only matching channels when searching
+ * @param {Array} units - Array of units
+ * @param {string} searchTerm - Search term
+ * @returns {Object} Object with filtered units array and hasSearch flag
+ */
+export function filterUnitsAndChannels(units, searchTerm) {
+    if (!searchTerm || searchTerm.trim() === '') {
+        return { units, hasSearch: false };
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filteredUnits = [];
+
+    units.forEach(unit => {
+        // Check if unit properties match
+        const unitMatches =
+            unit.name.toLowerCase().includes(term) ||
+            unit.id.toLowerCase().includes(term) ||
+            unit.serial.toLowerCase().includes(term);
+
+        // Filter channels within groups
+        const filteredChannelGroups = unit.channels.map(group => ({
+            ...group,
+            channels: group.channels.filter(channel =>
+                channel.name.toLowerCase().includes(term) ||
+                channel.number.toString().includes(term) ||
+                channel.direction.toLowerCase().includes(term)
+            )
+        })).filter(group => group.channels.length > 0);
+
+        // Include unit if it matches or has matching channels
+        if (unitMatches || filteredChannelGroups.length > 0) {
+            filteredUnits.push({
+                ...unit,
+                channels: unitMatches ? unit.channels : filteredChannelGroups,
+                _allChannelsMatch: unitMatches
+            });
+        }
+    });
+
+    return { units: filteredUnits, hasSearch: true };
 }
 
 /**
