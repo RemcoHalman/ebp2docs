@@ -104,6 +104,70 @@
     padding: 15px 0;
 }
 
+/* Alarms Table */
+.alarms-table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+.alarms-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.alarms-table thead {
+    background: #ff9800;
+    color: white;
+}
+
+.alarms-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.alarms-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color var(--transition-speed) ease;
+}
+
+.alarms-table tbody tr:hover {
+    background-color: #fff8e1;
+}
+
+.alarms-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.alarms-table td {
+    padding: 12px 15px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.alarm-id-cell {
+    font-weight: 700;
+    color: #f57c00;
+    width: 120px;
+}
+
+.alarm-name-cell {
+    font-weight: 500;
+}
+
+.alarm-component-cell {
+    font-weight: 600;
+    color: var(--text-secondary);
+    width: 150px;
+}
+
 /* Channel Groups */
 .channel-group {
     margin-bottom: 20px;
@@ -283,6 +347,17 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+    }
+
+    .alarms-table th,
+    .alarms-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+
+    .alarm-id-cell,
+    .alarm-component-cell {
+        width: auto;
     }
 
     .channels-grid {
