@@ -6,9 +6,12 @@
 /**
  * Parse basic unit information from EBP file
  * @param {string} xmlString - XML content as string
- * @returns {Array} Array of unit objects
+ * @returns {Promise<Array>} Array of unit objects
  */
-export function parseUnits(xmlString) {
+export async function parseUnits(xmlString) {
+    // Lazy load dependencies to avoid breaking module loading
+    const { Direction } = await import('./enums.js');
+    const { decodeChannelSettings } = await import('./channel-decoder.js');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
 
@@ -33,13 +36,15 @@ export function parseUnits(xmlString) {
 
     for (let i = 0; i < unitElements.length; i++) {
         const unit = unitElements[i];
+        const unitId = parseInt(unit.getAttribute('id')) || 0;
+
         const unitData = {
-            id: unit.getAttribute('id') || 'N/A',
+            id: unitId,
             serial: unit.getAttribute('serial') || 'N/A',
             name: unit.getAttribute('name') || 'N/A',
             unitTypeId: unit.getAttribute('unitTypeId') || 'N/A',
             standardUnitVariantNumber: unit.getAttribute('standardUnitVariantNumber') || 'N/A',
-            channels: parseChannels(unit)
+            channels: parseChannels(unit, unitId, xmlDoc, Direction, decodeChannelSettings)
         };
         console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId);
         units.push(unitData);
@@ -54,11 +59,42 @@ export function parseUnits(xmlString) {
 }
 
 /**
+ * Get direction from components for a specific channel
+ * @param {number} combiId - Combined ID (256 * unitId + channelNumber - 1)
+ * @param {Document} xmlDoc - Parsed XML document
+ * @param {Object} Direction - Direction enum
+ * @returns {Object} Direction object
+ */
+function getDirectionFromComponents(combiId, xmlDoc, Direction) {
+    const schemaElements = xmlDoc.querySelectorAll('schema');
+
+    for (const schema of schemaElements) {
+        const componentElements = schema.querySelectorAll('components > component');
+
+        for (const component of componentElements) {
+            const channelId = parseInt(component.getAttribute('channelId'));
+
+            if (!isNaN(channelId) && channelId !== -2147483648 && channelId === combiId) {
+                // Found a component using this channel
+                const directionStr = component.getAttribute('direction') || '';
+                return Direction.fromString(directionStr);
+            }
+        }
+    }
+
+    return Direction.NONE;
+}
+
+/**
  * Parse channel information for a unit
  * @param {Element} unitElement - Unit XML element
+ * @param {number} unitId - Unit ID
+ * @param {Document} xmlDoc - Full XML document for component lookup
+ * @param {Object} Direction - Direction enum
+ * @param {Function} decodeChannelSettings - Channel decoder function
  * @returns {Array} Array of channel groups
  */
-function parseChannels(unitElement) {
+function parseChannels(unitElement, unitId, xmlDoc, Direction, decodeChannelSettings) {
     const channelGroups = [];
     const groupElements = unitElement.getElementsByTagName('unitChannelGroup');
 
@@ -69,15 +105,30 @@ function parseChannels(unitElement) {
 
         for (let j = 0; j < channelElements.length; j++) {
             const channel = channelElements[j];
-            channels.push({
-                number: channel.getAttribute('number') || 'N/A',
+            const channelNumber = parseInt(channel.getAttribute('number')) || 0;
+
+            // Calculate combiId to lookup actual direction from components
+            const combiId = 256 * unitId + channelNumber - 1;
+            const actualDirection = getDirectionFromComponents(combiId, xmlDoc, Direction);
+
+            const channelData = {
+                number: channelNumber,
                 name: channel.getAttribute('name') || 'N/A',
-                direction: channel.getAttribute('direction') || 'N/A',
-                inMainChannelSettingId: channel.getAttribute('inMainChannelSettingId') || '',
-                inChannelSettingId: channel.getAttribute('inChannelSettingId') || '',
-                outMainChannelSettingId: channel.getAttribute('outMainChannelSettingId') || '',
-                outChannelSettingId: channel.getAttribute('outChannelSettingId') || ''
-            });
+                direction: actualDirection, // Use actual direction from components
+                inMainChannelSettingId: parseInt(channel.getAttribute('inMainChannelSettingId')) || 0,
+                inChannelSettingId: parseInt(channel.getAttribute('inChannelSettingId')) || 0,
+                outMainChannelSettingId: parseInt(channel.getAttribute('outMainChannelSettingId')) || -1,
+                outChannelSettingId: parseInt(channel.getAttribute('outChannelSettingId')) || -1
+            };
+
+            // Decode channel settings
+            const decoded = decodeChannelSettings(channelData);
+            channelData.sInMainChannelSettingId = decoded.input.type;
+            channelData.sInChannelSettingId = decoded.input.subtype;
+            channelData.sOutMainChannelSettingId = decoded.output.type;
+            channelData.sOutChannelSettingId = decoded.output.subtype;
+
+            channels.push(channelData);
         }
 
         channelGroups.push({
@@ -203,11 +254,11 @@ export function parseProjectMetadata(xmlString) {
  */
 export function validateEBP(xmlString) {
     const errors = [];
-    
+
     try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-        
+
         // Check for XML parsing errors
         const parseError = xmlDoc.querySelector('parsererror');
         if (parseError) {
@@ -241,4 +292,188 @@ export function validateEBP(xmlString) {
         errors.push(`Parsing error: ${error.message}`);
         return { isValid: false, errors };
     }
+}
+
+/**
+ * Parse schemas from EBP file
+ * @param {string} xmlString - XML content as string
+ * @returns {Array} Array of schema objects
+ */
+export function parseSchemas(xmlString) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+    const schemas = [];
+    const schemaElements = xmlDoc.querySelectorAll('schemas > schema');
+
+    schemaElements.forEach(schema => {
+        schemas.push({
+            id: parseInt(schema.getAttribute('id')) || 0,
+            name: schema.getAttribute('name') || '',
+            sortIndex: parseInt(schema.getAttribute('sortIndex')) || 0
+        });
+    });
+
+    return schemas.sort((a, b) => a.sortIndex - b.sortIndex);
+}
+
+/**
+ * Parse components from EBP file
+ * @param {string} xmlString - XML content as string
+ * @returns {Array} Array of component objects
+ */
+export async function parseComponents(xmlString) {
+    // Lazy load the decoder to avoid breaking basic functionality
+    const { decodeComponent } = await import('./component-decoder.js');
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+    const components = [];
+    const masterModuleBusId = findMasterModuleBusId(xmlDoc);
+
+    const schemaElements = xmlDoc.querySelectorAll('schema');
+
+    schemaElements.forEach(schema => {
+        const tabName = schema.getAttribute('name') || '';
+        const componentElements = schema.querySelectorAll('components > component');
+
+        componentElements.forEach(componentNode => {
+            const componentId = parseInt(componentNode.getAttribute('componentId'));
+
+            // Skip special component types (alerts and memory)
+            if (componentId === 1292 || componentId === 2304) return;
+
+            const component = {
+                componentId,
+                channelId: parseInt(componentNode.getAttribute('channelId')) || null,
+                unitId: parseInt(componentNode.getAttribute('unitId')) || null
+            };
+
+            const properties = parseProperties(componentNode);
+            const decoded = decodeComponent(component, properties);
+
+            if (decoded.name) {
+                components.push({
+                    name: decoded.name,
+                    pgn: decoded.pgn,
+                    device: decoded.device ?? masterModuleBusId,
+                    instance: decoded.instance,
+                    id: decoded.id,
+                    direction: decoded.direction.name,
+                    tabName
+                });
+            }
+        });
+    });
+
+    // Sort components
+    return components.sort((a, b) => {
+        if (a.pgn !== b.pgn) return a.pgn - b.pgn;
+        if (a.device !== b.device) return a.device - b.device;
+        if (a.instance !== b.instance) return (a.instance ?? 0) - (b.instance ?? 0);
+
+        // Try to sort by ID if numeric
+        const aId = parseInt(a.id);
+        const bId = parseInt(b.id);
+        if (!isNaN(aId) && !isNaN(bId)) {
+            return aId - bId;
+        }
+
+        return String(a.id).localeCompare(String(b.id));
+    });
+}
+
+/**
+ * Parse memory from EBP file
+ * @param {string} xmlString - XML content as string
+ * @returns {Array} Array of memory objects
+ */
+export function parseMemory(xmlString) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+    const MEMORY_TYPES = new Map([
+        [0, { name: 'Bit (1 Bit)', bits: 1 }],
+        [1, { name: 'UByte (8 Bit)', bits: 8 }],
+        [2, { name: 'UWord (16 Bit)', bits: 16 }],
+        [3, { name: 'UDWord (32 Bit)', bits: 32 }]
+    ]);
+
+    const memory = [];
+    const componentElements = xmlDoc.querySelectorAll('component');
+
+    componentElements.forEach(componentNode => {
+        const componentId = parseInt(componentNode.getAttribute('componentId'));
+
+        if (componentId === 2304) { // Memory Stored Value component
+            const properties = parseProperties(componentNode);
+            const propertyMap = new Map();
+
+            properties.forEach(prop => {
+                propertyMap.set(prop.id, parseInt(prop.value) || null);
+            });
+
+            const memType = propertyMap.get(0);
+            const memLocation = propertyMap.get(1);
+            const type = MEMORY_TYPES.get(memType) || { name: 'unknown', bits: 1 };
+
+            memory.push({
+                type: type.name,
+                location: memLocation,
+                bits: type.bits
+            });
+        }
+    });
+
+    return memory.sort((a, b) => a.location - b.location);
+}
+
+/**
+ * Find the master module bus ID
+ * @param {Document} xmlDoc - Parsed XML document
+ * @returns {number} Master module bus ID or -1 if not found
+ */
+function findMasterModuleBusId(xmlDoc) {
+    const unitElements = xmlDoc.querySelectorAll('units > unit');
+
+    for (const unit of unitElements) {
+        const unitTypeId = parseInt(unit.getAttribute('unitTypeId')) || 0;
+
+        // Master module types: 101, 100
+        if (unitTypeId === 101 || unitTypeId === 100) {
+            return parseInt(unit.getAttribute('id')) || -1;
+        }
+
+        // Check for master module in properties (unitTypeId 20, 1, 16, 4)
+        if ([20, 1, 16, 4].includes(unitTypeId)) {
+            const properties = parseProperties(unit);
+            for (const prop of properties) {
+                if (prop.id === 2 && prop.value === '2') {
+                    return parseInt(unit.getAttribute('id')) || -1;
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * Parse properties from an XML element
+ * @param {Element} element - XML element
+ * @returns {Array} Array of property objects
+ */
+function parseProperties(element) {
+    const properties = [];
+    const propertyElements = element.querySelectorAll('properties > property');
+
+    propertyElements.forEach(prop => {
+        properties.push({
+            id: parseInt(prop.getAttribute('id')) || -1,
+            value: prop.getAttribute('value') || ''
+        });
+    });
+
+    return properties;
 }
