@@ -3,10 +3,6 @@
  * Handles parsing of EBP/XML files
  */
 
-import { Direction } from './enums.js';
-import { decodeChannelSettings } from './channel-decoder.js';
-import { decodeComponent } from './component-decoder.js';
-
 /**
  * Parse basic unit information from EBP file
  * @param {string} xmlString - XML content as string
@@ -275,7 +271,10 @@ export function parseSchemas(xmlString) {
  * @param {string} xmlString - XML content as string
  * @returns {Array} Array of component objects
  */
-export function parseComponents(xmlString) {
+export async function parseComponents(xmlString) {
+    // Lazy load the decoder to avoid breaking basic functionality
+    const { decodeComponent } = await import('./component-decoder.js');
+
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
 
