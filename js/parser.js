@@ -3,15 +3,15 @@
  * Handles parsing of EBP/XML files
  */
 
-import { Direction } from './enums.js';
-import { decodeChannelSettings } from './channel-decoder.js';
-
 /**
  * Parse basic unit information from EBP file
  * @param {string} xmlString - XML content as string
- * @returns {Array} Array of unit objects
+ * @returns {Promise<Array>} Array of unit objects
  */
-export function parseUnits(xmlString) {
+export async function parseUnits(xmlString) {
+    // Lazy load dependencies to avoid breaking module loading
+    const { Direction } = await import('./enums.js');
+    const { decodeChannelSettings } = await import('./channel-decoder.js');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
 
@@ -44,7 +44,7 @@ export function parseUnits(xmlString) {
             name: unit.getAttribute('name') || 'N/A',
             unitTypeId: unit.getAttribute('unitTypeId') || 'N/A',
             standardUnitVariantNumber: unit.getAttribute('standardUnitVariantNumber') || 'N/A',
-            channels: parseChannels(unit, unitId, xmlDoc)
+            channels: parseChannels(unit, unitId, xmlDoc, Direction, decodeChannelSettings)
         };
         console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId);
         units.push(unitData);
@@ -62,9 +62,10 @@ export function parseUnits(xmlString) {
  * Get direction from components for a specific channel
  * @param {number} combiId - Combined ID (256 * unitId + channelNumber - 1)
  * @param {Document} xmlDoc - Parsed XML document
+ * @param {Object} Direction - Direction enum
  * @returns {Object} Direction object
  */
-function getDirectionFromComponents(combiId, xmlDoc) {
+function getDirectionFromComponents(combiId, xmlDoc, Direction) {
     const schemaElements = xmlDoc.querySelectorAll('schema');
 
     for (const schema of schemaElements) {
@@ -89,9 +90,11 @@ function getDirectionFromComponents(combiId, xmlDoc) {
  * @param {Element} unitElement - Unit XML element
  * @param {number} unitId - Unit ID
  * @param {Document} xmlDoc - Full XML document for component lookup
+ * @param {Object} Direction - Direction enum
+ * @param {Function} decodeChannelSettings - Channel decoder function
  * @returns {Array} Array of channel groups
  */
-function parseChannels(unitElement, unitId, xmlDoc) {
+function parseChannels(unitElement, unitId, xmlDoc, Direction, decodeChannelSettings) {
     const channelGroups = [];
     const groupElements = unitElement.getElementsByTagName('unitChannelGroup');
 
@@ -106,7 +109,7 @@ function parseChannels(unitElement, unitId, xmlDoc) {
 
             // Calculate combiId to lookup actual direction from components
             const combiId = 256 * unitId + channelNumber - 1;
-            const actualDirection = getDirectionFromComponents(combiId, xmlDoc);
+            const actualDirection = getDirectionFromComponents(combiId, xmlDoc, Direction);
 
             const channelData = {
                 number: channelNumber,

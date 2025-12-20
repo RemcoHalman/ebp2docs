@@ -642,7 +642,7 @@
                     }
 
                     // Parse all data
-                    allUnits = parseUnits(content);
+                    allUnits = await parseUnits(content);
                     currentUnits = allUnits;
                     currentMetadata = parseProjectMetadata(content);
                     currentAlarms = parseAlarms(content);
