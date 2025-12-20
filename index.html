@@ -557,6 +557,14 @@
         </button>
     </div>
 
+    <!-- Tabs (hidden until file is loaded) -->
+    <div class="tabs hidden" id="tabs">
+        <button class="tab-button active" data-tab="units">Units</button>
+        <button class="tab-button" data-tab="components">NMEA Components</button>
+        <button class="tab-button" data-tab="alerts">Alerts</button>
+        <button class="tab-button" data-tab="memory">Memory</button>
+    </div>
+
     <!-- Results container -->
     <div class="results" id="results"></div>
 
@@ -571,8 +579,8 @@
 
     <!-- Import modules -->
     <script type="module">
-        import { parseUnits, parseProjectMetadata, parseAlarms, validateEBP } from './js/parser.js';
-        import { displayUnits, displayError } from './js/ui.js';
+        import { parseUnits, parseProjectMetadata, parseAlarms, parseComponents, parseMemory, validateEBP } from './js/parser.js';
+        import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayError } from './js/ui.js';
         import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
 
         // DOM elements
@@ -582,12 +590,16 @@
         const toolbar = document.getElementById('toolbar');
         const searchBox = document.getElementById('searchBox');
         const exportPDFBtn = document.getElementById('exportPDF');
+        const tabs = document.getElementById('tabs');
 
         // Store parsed data globally
         let currentUnits = [];
         let allUnits = [];
         let currentMetadata = null;
         let currentAlarms = [];
+        let currentComponents = [];
+        let currentMemory = [];
+        let activeTab = 'units';
 
         // Click to upload
         dropZone.addEventListener('click', () => fileInput.click());
@@ -616,9 +628,9 @@
         });
 
         // Handle file upload
-        function handleFile(file) {
+        async function handleFile(file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
                     const content = e.target.result;
 
@@ -629,17 +641,20 @@
                         return;
                     }
 
-                    // Parse units, metadata, and alarms
+                    // Parse all data
                     allUnits = parseUnits(content);
                     currentUnits = allUnits;
                     currentMetadata = parseProjectMetadata(content);
                     currentAlarms = parseAlarms(content);
+                    currentComponents = await parseComponents(content);
+                    currentMemory = parseMemory(content);
 
-                    // Display results with metadata and alarms
-                    displayUnits(currentUnits, results, currentMetadata, false, currentAlarms);
+                    // Display current tab
+                    displayCurrentTab();
 
-                    // Show toolbar
+                    // Show toolbar and tabs
                     toolbar.style.display = 'flex';
+                    tabs.classList.remove('hidden');
 
                     // Reset search box
                     searchBox.value = '';
@@ -651,12 +666,56 @@
             reader.readAsText(file);
         }
 
-        // Search functionality
+        // Display current tab
+        function displayCurrentTab() {
+            switch (activeTab) {
+                case 'units':
+                    displayUnits(currentUnits, results, currentMetadata, false, currentAlarms);
+                    break;
+                case 'components':
+                    displayComponents(currentComponents, results, currentMetadata);
+                    break;
+                case 'alerts':
+                    displayAlertsDetailed(currentAlarms, results, currentMetadata);
+                    break;
+                case 'memory':
+                    displayMemory(currentMemory, results, currentMetadata);
+                    break;
+            }
+        }
+
+        // Tab switching
+        tabs.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active tab
+                activeTab = button.dataset.tab;
+
+                // Update button states
+                tabs.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+
+                // Display current tab
+                displayCurrentTab();
+
+                // Hide search for non-units tabs
+                if (activeTab !== 'units') {
+                    searchBox.style.display = 'none';
+                } else {
+                    searchBox.style.display = 'block';
+                }
+            });
+        });
+
+        // Search functionality (only for units tab)
         searchBox.addEventListener('input', debounce((e) => {
-            const searchTerm = e.target.value;
-            const { units: filtered, hasSearch } = filterUnitsAndChannels(allUnits, searchTerm);
-            currentUnits = filtered;
-            displayUnits(currentUnits, results, currentMetadata, hasSearch, currentAlarms);
+            if (activeTab === 'units') {
+                const searchTerm = e.target.value;
+                const { units: filtered, hasSearch } = filterUnitsAndChannels(allUnits, searchTerm);
+                currentUnits = filtered;
+                displayUnits(currentUnits, results, currentMetadata, hasSearch, currentAlarms);
+            }
         }, 300));
 
         // Export PDF

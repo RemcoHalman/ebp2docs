@@ -313,3 +313,115 @@ function formatDate(utcString) {
         return utcString;
     }
 }
+
+/**
+ * Display NMEA 2000 components in a table
+ * @param {Array} components - Array of component objects
+ * @param {HTMLElement} container - Container element
+ * @param {Object} metadata - Optional project metadata
+ */
+export function displayComponents(components, container, metadata = null) {
+    container.style.display = 'block';
+
+    let html = '';
+
+    if (metadata) {
+        html += renderMetadata(metadata);
+    }
+
+    html += '<div class="content-card" style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3>📡 NMEA 2000 Components</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Found ${components.length} component${components.length !== 1 ? 's' : ''}</p>`;
+    html += '<div style="overflow-x: auto;"><table><thead><tr>';
+    html += '<th>PGN Name</th><th>PGN Number</th><th>Device</th><th>Instance</th><th>ID</th><th>Direction</th><th>Tab</th>';
+    html += '</tr></thead><tbody>';
+
+    components.forEach(comp => {
+        const device = comp.device !== null && comp.device !== -1 ? comp.device : '';
+        const instance = comp.instance !== null && comp.instance !== -1 ? comp.instance : '';
+
+        html += '<tr>';
+        html += `<td>${escapeHtml(comp.name)}</td>`;
+        html += `<td>${comp.pgn}</td>`;
+        html += `<td>${device}</td>`;
+        html += `<td>${instance}</td>`;
+        html += `<td>${escapeHtml(comp.id)}</td>`;
+        html += `<td>${escapeHtml(comp.direction)}</td>`;
+        html += `<td>${escapeHtml(comp.tabName)}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Display alerts in a detailed table
+ * @param {Array} alerts - Array of alert objects
+ * @param {HTMLElement} container - Container element
+ * @param {Object} metadata - Optional project metadata
+ */
+export function displayAlertsDetailed(alerts, container, metadata = null) {
+    container.style.display = 'block';
+
+    let html = '';
+
+    if (metadata) {
+        html += renderMetadata(metadata);
+    }
+
+    html += '<div class="alarms-card"><div class="alarms-header">';
+    html += '<h3>🔔 Alarms</h3>';
+    html += `<span class="alarms-count">${alerts.length} alarm${alerts.length !== 1 ? 's' : ''}</span>`;
+    html += '</div><div style="overflow-x: auto;"><table class="alarms-table"><thead><tr>';
+    html += '<th>Alarm ID</th><th>Alarm Name</th><th>Schema</th>';
+    html += '</tr></thead><tbody>';
+
+    alerts.forEach(alert => {
+        html += '<tr>';
+        html += `<td class="alarm-id-cell">${escapeHtml(alert.alarmId)}</td>`;
+        html += `<td class="alarm-name-cell">${escapeHtml(alert.alarmName)}</td>`;
+        html += `<td class="alarm-schema-cell">${escapeHtml(alert.schemaName)}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Display memory allocations in a table
+ * @param {Array} memory - Array of memory objects
+ * @param {HTMLElement} container - Container element
+ * @param {Object} metadata - Optional project metadata
+ */
+export function displayMemory(memory, container, metadata = null) {
+    container.style.display = 'block';
+
+    let html = '';
+
+    if (metadata) {
+        html += renderMetadata(metadata);
+    }
+
+    html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3>💾 Memory Allocations</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Found ${memory.length} memory allocation${memory.length !== 1 ? 's' : ''}</p>`;
+    html += '<div style="overflow-x: auto;"><table><thead><tr>';
+    html += '<th>Memory Type</th><th>Memory Location</th><th>Bits</th>';
+    html += '</tr></thead><tbody>';
+
+    memory.forEach(mem => {
+        html += '<tr>';
+        html += `<td>${escapeHtml(mem.type)}</td>`;
+        html += `<td>${mem.location}</td>`;
+        html += `<td>${mem.bits}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+
+    container.innerHTML = html;
+}
