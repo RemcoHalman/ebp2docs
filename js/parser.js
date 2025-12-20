@@ -3,6 +3,9 @@
  * Handles parsing of EBP/XML files
  */
 
+import { Direction } from './enums.js';
+import { decodeChannelSettings } from './channel-decoder.js';
+
 /**
  * Parse basic unit information from EBP file
  * @param {string} xmlString - XML content as string
@@ -33,13 +36,15 @@ export function parseUnits(xmlString) {
 
     for (let i = 0; i < unitElements.length; i++) {
         const unit = unitElements[i];
+        const unitId = parseInt(unit.getAttribute('id')) || 0;
+
         const unitData = {
-            id: unit.getAttribute('id') || 'N/A',
+            id: unitId,
             serial: unit.getAttribute('serial') || 'N/A',
             name: unit.getAttribute('name') || 'N/A',
             unitTypeId: unit.getAttribute('unitTypeId') || 'N/A',
             standardUnitVariantNumber: unit.getAttribute('standardUnitVariantNumber') || 'N/A',
-            channels: parseChannels(unit)
+            channels: parseChannels(unit, unitId, xmlDoc)
         };
         console.log(`Unit ${i + 1}:`, unitData.name, 'ID:', unitData.id, 'TypeID:', unitData.unitTypeId);
         units.push(unitData);
@@ -54,11 +59,39 @@ export function parseUnits(xmlString) {
 }
 
 /**
+ * Get direction from components for a specific channel
+ * @param {number} combiId - Combined ID (256 * unitId + channelNumber - 1)
+ * @param {Document} xmlDoc - Parsed XML document
+ * @returns {Object} Direction object
+ */
+function getDirectionFromComponents(combiId, xmlDoc) {
+    const schemaElements = xmlDoc.querySelectorAll('schema');
+
+    for (const schema of schemaElements) {
+        const componentElements = schema.querySelectorAll('components > component');
+
+        for (const component of componentElements) {
+            const channelId = parseInt(component.getAttribute('channelId'));
+
+            if (!isNaN(channelId) && channelId !== -2147483648 && channelId === combiId) {
+                // Found a component using this channel
+                const directionStr = component.getAttribute('direction') || '';
+                return Direction.fromString(directionStr);
+            }
+        }
+    }
+
+    return Direction.NONE;
+}
+
+/**
  * Parse channel information for a unit
  * @param {Element} unitElement - Unit XML element
+ * @param {number} unitId - Unit ID
+ * @param {Document} xmlDoc - Full XML document for component lookup
  * @returns {Array} Array of channel groups
  */
-function parseChannels(unitElement) {
+function parseChannels(unitElement, unitId, xmlDoc) {
     const channelGroups = [];
     const groupElements = unitElement.getElementsByTagName('unitChannelGroup');
 
@@ -69,15 +102,30 @@ function parseChannels(unitElement) {
 
         for (let j = 0; j < channelElements.length; j++) {
             const channel = channelElements[j];
-            channels.push({
-                number: channel.getAttribute('number') || 'N/A',
+            const channelNumber = parseInt(channel.getAttribute('number')) || 0;
+
+            // Calculate combiId to lookup actual direction from components
+            const combiId = 256 * unitId + channelNumber - 1;
+            const actualDirection = getDirectionFromComponents(combiId, xmlDoc);
+
+            const channelData = {
+                number: channelNumber,
                 name: channel.getAttribute('name') || 'N/A',
-                direction: channel.getAttribute('direction') || 'N/A',
-                inMainChannelSettingId: channel.getAttribute('inMainChannelSettingId') || '',
-                inChannelSettingId: channel.getAttribute('inChannelSettingId') || '',
-                outMainChannelSettingId: channel.getAttribute('outMainChannelSettingId') || '',
-                outChannelSettingId: channel.getAttribute('outChannelSettingId') || ''
-            });
+                direction: actualDirection, // Use actual direction from components
+                inMainChannelSettingId: parseInt(channel.getAttribute('inMainChannelSettingId')) || 0,
+                inChannelSettingId: parseInt(channel.getAttribute('inChannelSettingId')) || 0,
+                outMainChannelSettingId: parseInt(channel.getAttribute('outMainChannelSettingId')) || -1,
+                outChannelSettingId: parseInt(channel.getAttribute('outChannelSettingId')) || -1
+            };
+
+            // Decode channel settings
+            const decoded = decodeChannelSettings(channelData);
+            channelData.sInMainChannelSettingId = decoded.input.type;
+            channelData.sInChannelSettingId = decoded.input.subtype;
+            channelData.sOutMainChannelSettingId = decoded.output.type;
+            channelData.sOutChannelSettingId = decoded.output.subtype;
+
+            channels.push(channelData);
         }
 
         channelGroups.push({

@@ -186,6 +186,18 @@ function renderChannels(channelGroups, unitTypeId, autoExpand = false) {
             const directionColor = getDirectionColor(directionName);
             const directionIcon = getDirectionIcon(directionName);
 
+            // Get the correct type/subtype based on actual direction
+            let channelType = '';
+            let channelSubtype = '';
+
+            if (channel.direction.id === 1) { // INPUT
+                channelType = channel.sInMainChannelSettingId;
+                channelSubtype = channel.sInChannelSettingId;
+            } else if (channel.direction.id === 2) { // OUTPUT
+                channelType = channel.sOutMainChannelSettingId;
+                channelSubtype = channel.sOutChannelSettingId;
+            }
+
             html += `
                 <div class="channel-item" style="border-left: 4px solid ${directionColor}">
                     <div class="channel-header">
@@ -195,6 +207,8 @@ function renderChannels(channelGroups, unitTypeId, autoExpand = false) {
                         </span>
                     </div>
                     <div class="channel-name">${escapeHtml(channel.name)}</div>
+                    ${channelType ? `<div class="channel-type" style="font-size: 12px; color: #666; margin-top: 4px;">${escapeHtml(channelType)}</div>` : ''}
+                    ${channelSubtype ? `<div class="channel-subtype" style="font-size: 11px; color: #888; margin-top: 2px;">${escapeHtml(channelSubtype)}</div>` : ''}
                 </div>
             `;
         });
