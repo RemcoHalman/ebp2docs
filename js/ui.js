@@ -11,7 +11,7 @@ import { escapeHtml, getDirectionIcon, getDirectionColor } from './utils.js';
  * @param {HTMLElement} container - Container element
  * @param {Object} metadata - Optional project metadata to display
  * @param {boolean} hasSearch - Whether search is active (auto-expands sections)
- * @param {Array} alarms - Optional array of alarm objects
+ * @param {Array} alarms - Optional array of alarm objects (no longer displayed here)
  */
 export function displayUnits(units, container, metadata = null, hasSearch = false, alarms = []) {
     container.style.display = 'block';
@@ -23,10 +23,7 @@ export function displayUnits(units, container, metadata = null, hasSearch = fals
         html += renderMetadata(metadata, units.length);
     }
 
-    // Add project-level alarms if provided
-    if (alarms && alarms.length > 0) {
-        html += renderProjectAlarms(alarms, hasSearch);
-    }
+    // Alarms are now displayed in their own tab, not here
 
     units.forEach((unit) => {
         html += renderUnitCard(unit, hasSearch);
@@ -184,15 +181,17 @@ function renderChannels(channelGroups, unitTypeId, autoExpand = false) {
         `;
 
         group.channels.forEach(channel => {
-            const directionColor = getDirectionColor(channel.direction);
-            const directionIcon = getDirectionIcon(channel.direction);
+            // Capitalize the direction name (input -> Input, output -> Output)
+            const directionName = channel.direction.name.charAt(0).toUpperCase() + channel.direction.name.slice(1);
+            const directionColor = getDirectionColor(directionName);
+            const directionIcon = getDirectionIcon(directionName);
 
             html += `
                 <div class="channel-item" style="border-left: 4px solid ${directionColor}">
                     <div class="channel-header">
                         <span class="channel-number">#${escapeHtml(channel.number)}</span>
                         <span class="channel-direction" style="color: ${directionColor}">
-                            ${directionIcon} ${escapeHtml(channel.direction)}
+                            ${directionIcon} ${directionName}
                         </span>
                     </div>
                     <div class="channel-name">${escapeHtml(channel.name)}</div>
