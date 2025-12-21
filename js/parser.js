@@ -401,33 +401,42 @@ export function parseMemory(xmlString) {
     ]);
 
     const memory = [];
-    const componentElements = xmlDoc.querySelectorAll('component');
+    
+    // Parse through schemas structure
+    const schemaElements = xmlDoc.querySelectorAll('schema');
+    
+    schemaElements.forEach(schemaNode => {
+        const tabName = schemaNode.getAttribute('name') || '';
+        const componentElements = schemaNode.querySelectorAll('component');
 
-    componentElements.forEach(componentNode => {
-        const componentId = parseInt(componentNode.getAttribute('componentId'));
+        componentElements.forEach(componentNode => {
+            const componentId = parseInt(componentNode.getAttribute('componentId'));
 
-        if (componentId === 2304) { // Memory Stored Value component
-            const properties = parseProperties(componentNode);
-            const propertyMap = new Map();
+            if (componentId === 2304) { // Memory Stored Value component
+                const properties = parseProperties(componentNode);
+                const propertyMap = new Map();
 
-            properties.forEach(prop => {
-                propertyMap.set(prop.id, parseInt(prop.value) || null);
-            });
+                properties.forEach(prop => {
+                    propertyMap.set(prop.id, parseInt(prop.value) || null);
+                });
 
-            const memType = propertyMap.get(0);
-            const memLocation = propertyMap.get(1);
-            const type = MEMORY_TYPES.get(memType) || { name: 'unknown', bits: 1 };
+                const memType = propertyMap.get(0);
+                const memLocation = propertyMap.get(1);
+                const type = MEMORY_TYPES.get(memType) || { name: 'unknown', bits: 1 };
 
-            memory.push({
-                type: type.name,
-                location: memLocation,
-                bits: type.bits
-            });
-        }
+                memory.push({
+                    type: type.name,
+                    location: memLocation,
+                    bits: type.bits,
+                    tabName: tabName
+                });
+            }
+        });
     });
 
     return memory.sort((a, b) => a.location - b.location);
 }
+
 
 /**
  * Find the master module bus ID
