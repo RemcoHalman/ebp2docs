@@ -423,13 +423,12 @@ export function displayMemory(memory, container, metadata = null) {
     html += '<h3>💾 Memory Allocations</h3>';
     html += `<p style="margin-bottom: 15px; color: #666;">Found ${memory.length} memory allocation${memory.length !== 1 ? 's' : ''}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    //html += '<th>Memory type</th><th>Memory Location</th><th>Bits</th>';
-    html += '<th>Memory Location</th><th>Bits</th>';
+    html += '<th>Schema</th><th>Memory Location</th><th>Bits</th>';
     html += '</tr></thead><tbody>';
 
     memory.forEach(mem => {
         html += '<tr>';
-        // html += `<td>${escapeHtml(mem.type)}</td>`;
+        html += `<td>${mem.tabName}</td>`;
         html += `<td>${mem.location}</td>`;
         html += `<td>${mem.bits}</td>`;
         html += '</tr>';
