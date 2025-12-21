@@ -76,6 +76,7 @@
         const searchBox = document.getElementById('searchBox');
         const exportPDFBtn = document.getElementById('exportPDF');
         const tabs = document.getElementById('tabs');
+        const metadataCard = document.querySelector('.metadata-card');
 
         // Store parsed data globally
         let currentUnits = [];
@@ -187,8 +188,10 @@
                 // Hide search for non-units tabs
                 if (activeTab !== 'units') {
                     searchBox.style.display = 'none';
+                    metadataCard.style.display = 'none';
                 } else {
                     searchBox.style.display = 'block';
+                    metadataCard.style.display = 'block';
                 }
             });
         });
