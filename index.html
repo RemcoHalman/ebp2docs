@@ -142,7 +142,7 @@
                         const moduleInfo = moduleLookup.get(unit.standardUnitVariantNumber);
                         return {
                             ...unit,
-                            productNumber: moduleInfo ? moduleInfo.productNumber : unit.name
+                            productNumber: moduleInfo ? moduleInfo.productNumber : 'Unknown'
                         };
                     });
 

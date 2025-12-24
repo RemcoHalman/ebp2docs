@@ -60,7 +60,7 @@ function renderUnitCard(unit, hasSearch = false) {
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Product Number</div>
-                    <div class="detail-value">${escapeHtml(unit.productNumber || unit.standardUnitVariantNumber)}</div>
+                    <div class="detail-value">${escapeHtml(unit.productNumber || 'Unknown')}</div>
                 </div>
             </div>
 
@@ -468,7 +468,7 @@ export function displayModules(units, container, metadata = null, modulesList = 
 
         return {
             ...unit,
-            productNumber: moduleInfo.productNumber,
+            productNumber: moduleInfo ? moduleInfo.productNumber : 'Unknown',
             moduleDescription: moduleInfo ? moduleInfo.description : ''
         };
     });
@@ -536,7 +536,7 @@ function generateBOMFromUnits(units) {
             bomMap.get(key).quantity++;
         } else {
             bomMap.set(key, {
-                productNumber: unit.productNumber,
+                productNumber: unit.productNumber || 'Unknown',
                 variantNumber: unit.standardUnitVariantNumber || 'N/A',
                 unitName: unit.name,
                 unitTypeId: unit.unitTypeId || 'N/A',
@@ -546,6 +546,6 @@ function generateBOMFromUnits(units) {
     });
 
     return Array.from(bomMap.values()).sort((a, b) =>
-        a.productNumber.localeCompare(b.productNumber)
+        (a.productNumber || 'Unknown').localeCompare(b.productNumber || 'Unknown')
     );
 }
