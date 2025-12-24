@@ -455,15 +455,26 @@ export function displayModules(units, container, metadata = null, modulesList = 
         html += renderMetadata(metadata);
     }
 
-    // Create a lookup map from the modules list
+    // Create a lookup map from the modules list - MATCH ON VARIANT NUMBER
     const moduleLookup = new Map();
     modulesList.forEach(module => {
-        moduleLookup.set(module.productNumber, module);
+        moduleLookup.set(module.standardUnitVariantNumber, module);
     });
 
-    // Generate Bill of Materials
-    const bom = generateBOMFromUnits(units);
-    const uniqueModules = getUniqueModulesFromUnits(units);
+    // Enrich units with product numbers from modules.js based on variant number
+    const enrichedUnits = units.map(unit => {
+        const variantNumber = unit.standardUnitVariantNumber;
+        const moduleInfo = moduleLookup.get(variantNumber);
+
+        return {
+            ...unit,
+            productNumber: moduleInfo ? moduleInfo.productNumber : unit.name,
+            moduleDescription: moduleInfo ? moduleInfo.description : ''
+        };
+    });
+
+    // Generate Bill of Materials from enriched units
+    const bom = generateBOMFromUnits(enrichedUnits);
 
     // Modules List Section - showing all available modules from modules.js
     html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
@@ -493,7 +504,7 @@ export function displayModules(units, container, metadata = null, modulesList = 
     html += '<h3>📋 Bill of Materials (from loaded file)</h3>';
     html += `<p style="margin-bottom: 15px; color: #666;">Total items: ${bom.reduce((sum, item) => sum + item.quantity, 0)} | Unique products: ${bom.length}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    html += '<th>Quantity</th><th>Product Number</th><th>Variant Number</th><th>Unit Type ID</th>';
+    html += '<th>Quantity</th><th>Product Number</th><th>Variant Number</th><th>Unit Name</th><th>Unit Type ID</th>';
     html += '</tr></thead><tbody>';
 
     bom.forEach(item => {
@@ -501,6 +512,7 @@ export function displayModules(units, container, metadata = null, modulesList = 
         html += `<td style="text-align: center; font-weight: bold;">${item.quantity}</td>`;
         html += `<td>${escapeHtml(item.productNumber)}</td>`;
         html += `<td>${escapeHtml(item.variantNumber)}</td>`;
+        html += `<td>${escapeHtml(item.unitName)}</td>`;
         html += `<td>${escapeHtml(item.unitTypeId)}</td>`;
         html += '</tr>';
     });
@@ -536,22 +548,23 @@ function getUniqueModulesFromUnits(units) {
 
 /**
  * Generate Bill of Materials from units array
- * @param {Array} units - Array of unit objects
+ * @param {Array} units - Array of unit objects (can be enriched with productNumber)
  * @returns {Array} BOM entries with product number, variant number, unit type, and quantity
  */
 function generateBOMFromUnits(units) {
     const bomMap = new Map();
 
     units.forEach(unit => {
-        // Use only product number as the key for proper aggregation
-        const key = unit.name;
+        // Use variant number as the key for proper aggregation
+        const key = unit.standardUnitVariantNumber || unit.name;
 
         if (bomMap.has(key)) {
             bomMap.get(key).quantity++;
         } else {
             bomMap.set(key, {
-                productNumber: unit.name,
+                productNumber: unit.productNumber || unit.name,
                 variantNumber: unit.standardUnitVariantNumber || 'N/A',
+                unitName: unit.name,
                 unitTypeId: unit.unitTypeId || 'N/A',
                 quantity: 1
             });
