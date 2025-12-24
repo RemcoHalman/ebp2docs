@@ -438,3 +438,114 @@ export function displayMemory(memory, container, metadata = null) {
 
     container.innerHTML = html;
 }
+
+/**
+ * Display modules with product numbers and variant numbers
+ * @param {Array} units - Array of unit objects
+ * @param {HTMLElement} container - Container element
+ * @param {Object} metadata - Optional project metadata
+ */
+export function displayModules(units, container, metadata = null) {
+    container.style.display = 'block';
+
+    let html = '';
+
+    if (metadata) {
+        html += renderMetadata(metadata);
+    }
+
+    // Generate Bill of Materials
+    const bom = generateBOMFromUnits(units);
+    const uniqueModules = getUniqueModulesFromUnits(units);
+
+    // Modules List Section
+    html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
+    html += '<h3>📦 Modules</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Found ${uniqueModules.length} unique module${uniqueModules.length !== 1 ? 's' : ''}</p>`;
+    html += '<div style="overflow-x: auto;"><table><thead><tr>';
+    html += '<th>Product Number</th><th>Variant Number</th><th>Unit Type ID</th>';
+    html += '</tr></thead><tbody>';
+
+    uniqueModules.forEach(module => {
+        html += '<tr>';
+        html += `<td>${escapeHtml(module.productNumber)}</td>`;
+        html += `<td>${escapeHtml(module.variantNumber)}</td>`;
+        html += `<td>${escapeHtml(module.unitTypeId)}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+
+    // Bill of Materials Section
+    html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3>📋 Bill of Materials</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Total items: ${bom.reduce((sum, item) => sum + item.quantity, 0)}</p>`;
+    html += '<div style="overflow-x: auto;"><table><thead><tr>';
+    html += '<th>Quantity</th><th>Product Number</th><th>Variant Number</th><th>Unit Type ID</th>';
+    html += '</tr></thead><tbody>';
+
+    bom.forEach(item => {
+        html += '<tr>';
+        html += `<td style="text-align: center; font-weight: bold;">${item.quantity}</td>`;
+        html += `<td>${escapeHtml(item.productNumber)}</td>`;
+        html += `<td>${escapeHtml(item.variantNumber)}</td>`;
+        html += `<td>${escapeHtml(item.unitTypeId)}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Get unique modules from units array
+ * @param {Array} units - Array of unit objects
+ * @returns {Array} Array of unique modules
+ */
+function getUniqueModulesFromUnits(units) {
+    const uniqueMap = new Map();
+
+    units.forEach(unit => {
+        const key = `${unit.name}|${unit.standardUnitVariantNumber || 'N/A'}`;
+        if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, {
+                productNumber: unit.name,
+                variantNumber: unit.standardUnitVariantNumber || 'N/A',
+                unitTypeId: unit.unitTypeId || 'N/A'
+            });
+        }
+    });
+
+    return Array.from(uniqueMap.values()).sort((a, b) =>
+        a.productNumber.localeCompare(b.productNumber)
+    );
+}
+
+/**
+ * Generate Bill of Materials from units array
+ * @param {Array} units - Array of unit objects
+ * @returns {Array} BOM entries with product number, variant number, unit type, and quantity
+ */
+function generateBOMFromUnits(units) {
+    const bomMap = new Map();
+
+    units.forEach(unit => {
+        const key = `${unit.name}|${unit.standardUnitVariantNumber || 'N/A'}|${unit.unitTypeId || 'N/A'}`;
+
+        if (bomMap.has(key)) {
+            bomMap.get(key).quantity++;
+        } else {
+            bomMap.set(key, {
+                productNumber: unit.name,
+                variantNumber: unit.standardUnitVariantNumber || 'N/A',
+                unitTypeId: unit.unitTypeId || 'N/A',
+                quantity: 1
+            });
+        }
+    });
+
+    return Array.from(bomMap.values()).sort((a, b) =>
+        a.productNumber.localeCompare(b.productNumber)
+    );
+}
