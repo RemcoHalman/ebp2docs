@@ -131,6 +131,21 @@
 
                     // Parse all data
                     allUnits = await parseUnits(content);
+
+                    // Enrich units with product numbers from modules.js
+                    const moduleLookup = new Map();
+                    MODULES.forEach(module => {
+                        moduleLookup.set(module.standardUnitVariantNumber, module);
+                    });
+
+                    allUnits = allUnits.map(unit => {
+                        const moduleInfo = moduleLookup.get(unit.standardUnitVariantNumber);
+                        return {
+                            ...unit,
+                            productNumber: moduleInfo ? moduleInfo.productNumber : unit.name
+                        };
+                    });
+
                     currentUnits = allUnits;
                     currentMetadata = parseProjectMetadata(content);
                     currentAlarms = parseAlarms(content);

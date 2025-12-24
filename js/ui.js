@@ -59,8 +59,8 @@ function renderUnitCard(unit, hasSearch = false) {
                     <div class="detail-value">${escapeHtml(unit.unitTypeId)}</div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">Variant Number</div>
-                    <div class="detail-value">${escapeHtml(unit.standardUnitVariantNumber)}</div>
+                    <div class="detail-label">Product Number</div>
+                    <div class="detail-value">${escapeHtml(unit.productNumber || unit.standardUnitVariantNumber)}</div>
                 </div>
             </div>
 
@@ -476,41 +476,18 @@ export function displayModules(units, container, metadata = null, modulesList = 
     // Generate Bill of Materials from enriched units
     const bom = generateBOMFromUnits(enrichedUnits);
 
-    // Modules List Section - showing all available modules from modules.js
-    html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
-    html += '<h3>📦 Available Modules</h3>';
-    html += `<p style="margin-bottom: 15px; color: #666;">Total available modules in database: ${modulesList.length}</p>`;
-    html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    html += '<th>Product Number</th><th>Description</th>';
-    html += '</tr></thead><tbody>';
-
-    // Sort modules by product number
-    const sortedModules = [...modulesList].sort((a, b) =>
-        a.productNumber.localeCompare(b.productNumber)
-    );
-
-    sortedModules.forEach(module => {
-        html += '<tr>';
-        html += `<td>${escapeHtml(module.productNumber)}</td>`;
-        html += `<td>${escapeHtml(module.description || '-')}</td>`;
-        html += '</tr>';
-    });
-
-    html += '</tbody></table></div></div>';
-
     // Bill of Materials Section - showing what's actually used in the loaded file
     html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-    html += '<h3>📋 Bill of Materials (from loaded file)</h3>';
+    html += '<h3>📋 Bill of Materials</h3>';
     html += `<p style="margin-bottom: 15px; color: #666;">Total items: ${bom.reduce((sum, item) => sum + item.quantity, 0)} | Unique products: ${bom.length}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    html += '<th>Quantity</th><th>Product Number</th><th>Variant Number</th><th>Unit Name</th><th>Unit Type ID</th>';
+    html += '<th>Quantity</th><th>Product Number</th>';
     html += '</tr></thead><tbody>';
 
     bom.forEach(item => {
         html += '<tr>';
         html += `<td style="text-align: center; font-weight: bold;">${item.quantity}</td>`;
         html += `<td>${escapeHtml(item.productNumber)}</td>`;
-        html += `<td>${escapeHtml(item.unitTypeId)}</td>`;
         html += '</tr>';
     });
 
