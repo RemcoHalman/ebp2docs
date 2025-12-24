@@ -48,6 +48,7 @@
         <button class="tab-button" data-tab="components">NMEA Components</button>
         <button class="tab-button" data-tab="alerts">Alerts</button>
         <button class="tab-button" data-tab="memory">Memory</button>
+        <button class="tab-button" data-tab="modules">Modules</button>
     </div>
 
     <!-- Results container -->
@@ -65,8 +66,9 @@
     <!-- Import modules -->
     <script type="module">
         import { parseUnits, parseProjectMetadata, parseAlarms, parseComponents, parseMemory, validateEBP } from './js/parser.js';
-        import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayError } from './js/ui.js';
+        import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayModules, displayError } from './js/ui.js';
         import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
+        import { MODULES, getModuleByProductNumber } from './modules.js';
 
         // DOM elements
         const dropZone = document.getElementById('dropZone');
@@ -129,6 +131,21 @@
 
                     // Parse all data
                     allUnits = await parseUnits(content);
+
+                    // Enrich units with product numbers from modules.js
+                    const moduleLookup = new Map();
+                    MODULES.forEach(module => {
+                        moduleLookup.set(module.standardUnitVariantNumber, module);
+                    });
+
+                    allUnits = allUnits.map(unit => {
+                        const moduleInfo = moduleLookup.get(unit.standardUnitVariantNumber);
+                        return {
+                            ...unit,
+                            productNumber: moduleInfo ? moduleInfo.productNumber : 'Unknown'
+                        };
+                    });
+
                     currentUnits = allUnits;
                     currentMetadata = parseProjectMetadata(content);
                     currentAlarms = parseAlarms(content);
@@ -167,6 +184,9 @@
                 case 'memory':
                     displayMemory(currentMemory, results, currentMetadata);
                     break;
+                case 'modules':
+                    displayModules(allUnits, results, currentMetadata, MODULES);
+                    break;
             }
         }
 
@@ -188,10 +208,18 @@
                 // Hide search for non-units tabs
                 if (activeTab !== 'units') {
                     searchBox.style.display = 'none';
-                    metadataCard.style.display = 'none';
                 } else {
                     searchBox.style.display = 'block';
-                    metadataCard.style.display = 'block';
+                }
+
+                // Show metadata card only for units tab
+                const metadataCard = document.querySelector('.metadata-card');
+                if (metadataCard) {
+                    if (activeTab === 'units') {
+                        metadataCard.style.display = 'block';
+                    } else {
+                        metadataCard.style.display = 'none';
+                    }
                 }
             });
         });
