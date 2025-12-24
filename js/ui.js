@@ -444,8 +444,9 @@ export function displayMemory(memory, container, metadata = null) {
  * @param {Array} units - Array of unit objects
  * @param {HTMLElement} container - Container element
  * @param {Object} metadata - Optional project metadata
+ * @param {Array} modulesList - Array of module definitions from modules.js
  */
-export function displayModules(units, container, metadata = null) {
+export function displayModules(units, container, metadata = null, modulesList = []) {
     container.style.display = 'block';
 
     let html = '';
@@ -454,32 +455,43 @@ export function displayModules(units, container, metadata = null) {
         html += renderMetadata(metadata);
     }
 
+    // Create a lookup map from the modules list
+    const moduleLookup = new Map();
+    modulesList.forEach(module => {
+        moduleLookup.set(module.productNumber, module);
+    });
+
     // Generate Bill of Materials
     const bom = generateBOMFromUnits(units);
     const uniqueModules = getUniqueModulesFromUnits(units);
 
-    // Modules List Section
+    // Modules List Section - showing all available modules from modules.js
     html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
-    html += '<h3>📦 Modules</h3>';
-    html += `<p style="margin-bottom: 15px; color: #666;">Found ${uniqueModules.length} unique module${uniqueModules.length !== 1 ? 's' : ''}</p>`;
+    html += '<h3>📦 Available Modules</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Total available modules in database: ${modulesList.length}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    html += '<th>Product Number</th><th>Variant Number</th><th>Unit Type ID</th>';
+    html += '<th>Product Number</th><th>Variant Number</th><th>Description</th>';
     html += '</tr></thead><tbody>';
 
-    uniqueModules.forEach(module => {
+    // Sort modules by product number
+    const sortedModules = [...modulesList].sort((a, b) =>
+        a.productNumber.localeCompare(b.productNumber)
+    );
+
+    sortedModules.forEach(module => {
         html += '<tr>';
         html += `<td>${escapeHtml(module.productNumber)}</td>`;
-        html += `<td>${escapeHtml(module.variantNumber)}</td>`;
-        html += `<td>${escapeHtml(module.unitTypeId)}</td>`;
+        html += `<td>${escapeHtml(module.standardUnitVariantNumber)}</td>`;
+        html += `<td>${escapeHtml(module.description || '-')}</td>`;
         html += '</tr>';
     });
 
     html += '</tbody></table></div></div>';
 
-    // Bill of Materials Section
+    // Bill of Materials Section - showing what's actually used in the loaded file
     html += '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-    html += '<h3>📋 Bill of Materials</h3>';
-    html += `<p style="margin-bottom: 15px; color: #666;">Total items: ${bom.reduce((sum, item) => sum + item.quantity, 0)}</p>`;
+    html += '<h3>📋 Bill of Materials (from loaded file)</h3>';
+    html += `<p style="margin-bottom: 15px; color: #666;">Total items: ${bom.reduce((sum, item) => sum + item.quantity, 0)} | Unique products: ${bom.length}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
     html += '<th>Quantity</th><th>Product Number</th><th>Variant Number</th><th>Unit Type ID</th>';
     html += '</tr></thead><tbody>';
@@ -531,7 +543,8 @@ function generateBOMFromUnits(units) {
     const bomMap = new Map();
 
     units.forEach(unit => {
-        const key = `${unit.name}|${unit.standardUnitVariantNumber || 'N/A'}|${unit.unitTypeId || 'N/A'}`;
+        // Use only product number as the key for proper aggregation
+        const key = unit.name;
 
         if (bomMap.has(key)) {
             bomMap.get(key).quantity++;

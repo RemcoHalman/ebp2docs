@@ -68,6 +68,7 @@
         import { parseUnits, parseProjectMetadata, parseAlarms, parseComponents, parseMemory, validateEBP } from './js/parser.js';
         import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayModules, displayError } from './js/ui.js';
         import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
+        import { MODULES, getModuleByProductNumber } from './modules.js';
 
         // DOM elements
         const dropZone = document.getElementById('dropZone');
@@ -169,7 +170,7 @@
                     displayMemory(currentMemory, results, currentMetadata);
                     break;
                 case 'modules':
-                    displayModules(allUnits, results, currentMetadata);
+                    displayModules(allUnits, results, currentMetadata, MODULES);
                     break;
             }
         }
