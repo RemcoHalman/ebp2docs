@@ -468,7 +468,7 @@ export function displayModules(units, container, metadata = null, modulesList = 
 
         return {
             ...unit,
-            productNumber: moduleInfo ? moduleInfo.productNumber : unit.name,
+            productNumber: moduleInfo.productNumber,
             moduleDescription: moduleInfo ? moduleInfo.description : ''
         };
     });
@@ -481,7 +481,7 @@ export function displayModules(units, container, metadata = null, modulesList = 
     html += '<h3>📦 Available Modules</h3>';
     html += `<p style="margin-bottom: 15px; color: #666;">Total available modules in database: ${modulesList.length}</p>`;
     html += '<div style="overflow-x: auto;"><table><thead><tr>';
-    html += '<th>Product Number</th><th>Variant Number</th><th>Description</th>';
+    html += '<th>Product Number</th><th>Description</th>';
     html += '</tr></thead><tbody>';
 
     // Sort modules by product number
@@ -492,7 +492,6 @@ export function displayModules(units, container, metadata = null, modulesList = 
     sortedModules.forEach(module => {
         html += '<tr>';
         html += `<td>${escapeHtml(module.productNumber)}</td>`;
-        html += `<td>${escapeHtml(module.standardUnitVariantNumber)}</td>`;
         html += `<td>${escapeHtml(module.description || '-')}</td>`;
         html += '</tr>';
     });
@@ -511,8 +510,6 @@ export function displayModules(units, container, metadata = null, modulesList = 
         html += '<tr>';
         html += `<td style="text-align: center; font-weight: bold;">${item.quantity}</td>`;
         html += `<td>${escapeHtml(item.productNumber)}</td>`;
-        html += `<td>${escapeHtml(item.variantNumber)}</td>`;
-        html += `<td>${escapeHtml(item.unitName)}</td>`;
         html += `<td>${escapeHtml(item.unitTypeId)}</td>`;
         html += '</tr>';
     });
@@ -562,7 +559,7 @@ function generateBOMFromUnits(units) {
             bomMap.get(key).quantity++;
         } else {
             bomMap.set(key, {
-                productNumber: unit.productNumber || unit.name,
+                productNumber: unit.productNumber,
                 variantNumber: unit.standardUnitVariantNumber || 'N/A',
                 unitName: unit.name,
                 unitTypeId: unit.unitTypeId || 'N/A',
