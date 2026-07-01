@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EBP2DOC Web</title>
+    <title>EBP 2 DOC</title>
     <link rel="stylesheet" href="css/main.css">
     <style>
     </style>
@@ -17,7 +17,7 @@
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
         </svg>
-        EBP2DOC Web
+        EmpirBus to IO list
     </h1>
 
     <div class="drop-zone" id="dropZone">
@@ -54,9 +54,44 @@
     <!-- Results container -->
     <div class="results" id="results"></div>
 
+    <!-- Print-only channel table (hidden on screen, shown via @media print) -->
+    <div id="printTable" class="print-only"></div>
+
+    <!-- Export details modal (boat info + per-module location) -->
+    <div class="modal-overlay hidden" id="exportModalOverlay">
+        <div class="modal">
+            <h3>Export details</h3>
+            <div class="modal-field">
+                <label for="boatName">Boat name</label>
+                <input type="text" id="boatName" placeholder="e.g. Serenity">
+            </div>
+            <div class="modal-field">
+                <label for="boatType">Boat type</label>
+                <input type="text" id="boatType" placeholder="e.g. Sunseeker 65">
+            </div>
+            <div class="modal-field">
+                <label>Accent color</label>
+                <div class="modal-color-list" id="modalColorList">
+                    <button type="button" class="modal-color-swatch selected" data-color="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button>
+                    <button type="button" class="modal-color-swatch" data-color="#540F0B" style="background:#540F0B" title="Red (Burgundy)" aria-label="Red (Burgundy)"></button>
+                    <button type="button" class="modal-color-swatch" data-color="#db6d28" style="background:#db6d28" title="Orange" aria-label="Orange"></button>
+                    <button type="button" class="modal-color-swatch" data-color="#3fb950" style="background:#3fb950" title="Green" aria-label="Green"></button>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Module locations</label>
+                <div class="modal-unit-list" id="modalUnitList"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="button button-secondary" id="exportModalCancel">Cancel</button>
+                <button class="button button-primary" id="exportModalConfirm">Generate PDF</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <div class="footer">
-        <span class="footer-version">v1.1.2</span>
+        <span class="footer-version">v1.2.0</span>
         <span class="footer-separator">•</span>
         <a href="https://github.com/remcohalman/ebp2docs" target="_blank" class="footer-link">
             View on GitHub
@@ -66,8 +101,8 @@
     <!-- Import modules -->
     <script type="module">
         import { parseUnits, parseProjectMetadata, parseAlarms, parseComponents, parseMemory, validateEBP } from './js/parser.js';
-        import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayModules, displayError } from './js/ui.js';
-        import { downloadPDF, filterUnitsAndChannels, debounce } from './js/utils.js';
+        import { displayUnits, displayComponents, displayAlertsDetailed, displayMemory, displayModules, displayError, getVisibleChannelGroups } from './js/ui.js';
+        import { downloadPDF, filterUnitsAndChannels, debounce, escapeHtml } from './js/utils.js';
         import { MODULES, getModuleByProductNumber } from './modules.js';
 
         // DOM elements
@@ -79,6 +114,23 @@
         const exportPDFBtn = document.getElementById('exportPDF');
         const tabs = document.getElementById('tabs');
         const metadataCard = document.querySelector('.metadata-card');
+        const exportModalOverlay = document.getElementById('exportModalOverlay');
+        const modalUnitList = document.getElementById('modalUnitList');
+        const boatNameInput = document.getElementById('boatName');
+        const boatTypeInput = document.getElementById('boatType');
+        const modalColorList = document.getElementById('modalColorList');
+        const exportModalCancel = document.getElementById('exportModalCancel');
+        const exportModalConfirm = document.getElementById('exportModalConfirm');
+
+        let selectedAccentColor = modalColorList.querySelector('.modal-color-swatch.selected').dataset.color;
+
+        modalColorList.addEventListener('click', (e) => {
+            const swatch = e.target.closest('.modal-color-swatch');
+            if (!swatch) return;
+            modalColorList.querySelectorAll('.modal-color-swatch').forEach(el => el.classList.remove('selected'));
+            swatch.classList.add('selected');
+            selectedAccentColor = swatch.dataset.color;
+        });
 
         // Store parsed data globally
         let currentUnits = [];
@@ -234,9 +286,53 @@
             }
         }, 300));
 
-        // Export PDF
+        // Export PDF - open the details modal first (boat info + per-module location)
         exportPDFBtn.addEventListener('click', () => {
-            downloadPDF(currentMetadata);
+            openExportModal();
+        });
+
+        function openExportModal() {
+            // Only list units that will actually appear in the printed output
+            // (excludes WDU/MFD units and units with no visible channels).
+            const printableUnits = allUnits.filter(unit => {
+                if (unit.unitTypeId === '200') return false;
+                const groups = getVisibleChannelGroups(unit.channels, unit.unitTypeId);
+                return groups.some(group => group.channels.length > 0);
+            });
+
+            modalUnitList.innerHTML = printableUnits.map(unit => `
+                <div class="modal-unit-row" data-unit-id="${escapeHtml(unit.id)}">
+                    <span class="modal-unit-name">${escapeHtml(unit.name)} (Unit ID: ${escapeHtml(unit.id)})</span>
+                    <input type="text" class="modal-location-input" placeholder="Location">
+                </div>
+            `).join('');
+
+            exportModalOverlay.classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            exportModalOverlay.classList.add('hidden');
+        }
+
+        exportModalCancel.addEventListener('click', closeExportModal);
+
+        exportModalOverlay.addEventListener('click', (e) => {
+            if (e.target === exportModalOverlay) closeExportModal();
+        });
+
+        exportModalConfirm.addEventListener('click', () => {
+            const boatName = boatNameInput.value.trim();
+            const boatType = boatTypeInput.value.trim();
+
+            const locationsByUnitId = {};
+            modalUnitList.querySelectorAll('.modal-unit-row').forEach(row => {
+                const unitId = row.dataset.unitId;
+                const location = row.querySelector('.modal-location-input').value.trim();
+                locationsByUnitId[unitId] = location;
+            });
+
+            closeExportModal();
+            downloadPDF(allUnits, currentMetadata, { boatName, boatType, locationsByUnitId, accentColor: selectedAccentColor });
         });
     </script>
 </body>

@@ -1,3 +1,21 @@
+:root {
+    --color-red: #F1331B;
+    --color-burgundy: #540F0B;
+    --color-black: #030303;
+    --color-gray-1: #202020;
+    --color-gray-2: #373737;
+    --color-gray-3: #96958D;
+    --color-gray-4: #CCCAC3;
+    --color-gray-5: #E5E4DC;
+    --color-gray-6: #F7F7F5;
+    --color-white: #FFFFFF;
+
+    --accent: var(--color-red);
+    --accent-glow: rgba(241, 51, 27, .25);
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-heading: Georgia, 'Times New Roman', serif;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -5,7 +23,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--font);
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
@@ -14,7 +32,8 @@ body {
 }
 
 h1 {
-    color: #333;
+    font-family: var(--font-heading);
+    color: var(--color-black);
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -49,7 +68,7 @@ h4 {
 }
 
 .drop-zone.drag-over {
-    border-color: #007bff;
+    border-color: var(--accent);
     background: #f0f8ff;
     transform: scale(1.02);
 }
@@ -83,8 +102,8 @@ h4 {
 
 .search-box:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .button {
@@ -106,6 +125,125 @@ h4 {
 .button-secondary:hover {
     background: #f8f9fa;
     border-color: #999;
+}
+
+.button-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.button-primary:hover {
+    background: var(--color-burgundy);
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+    margin-bottom: 20px;
+}
+
+.modal-field {
+    margin-bottom: 16px;
+}
+
+.modal-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.modal-field input[type="text"] {
+    width: 70%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.modal-color-list {
+    display: flex;
+    gap: 12px;
+}
+
+.modal-color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-color-swatch:hover {
+    transform: scale(1.1);
+}
+
+.modal-color-swatch.selected {
+    border-color: var(--color-black);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-black);
+}
+
+.modal-unit-list {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.modal-unit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 4px;
+}
+
+.modal-unit-row:not(:last-child) {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-unit-name {
+    font-size: 13px;
+    color: #333;
+    flex: 1;
+}
+
+.modal-location-input {
+    width: 150px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
 }
 
 .error {
@@ -133,7 +271,7 @@ h4 {
 .metadata-card h3 {
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid var(--accent);
 }
 
 .metadata-grid {
@@ -233,9 +371,9 @@ h4 {
 }
 
 .tab-button.active {
-    background: #007bff;
+    background: var(--accent);
     color: white;
-    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+    box-shadow: 0 2px 5px rgba(241, 51, 27, .35);
 }
 
 .content {
@@ -298,13 +436,13 @@ tbody tr:nth-child(even):hover {
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid var(--accent);
 }
 
 .unit-name {
     font-size: 20px;
     font-weight: 600;
-    color: #007bff;
+    color: var(--accent);
 }
 
 .unit-id {
@@ -398,7 +536,7 @@ tbody tr:nth-child(even):hover {
     padding: 12px;
     background: #fafafa;
     border-radius: 4px;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid var(--accent);
 }
 
 .channel-header {
@@ -447,7 +585,7 @@ tbody tr:nth-child(even):hover {
 }
 
 .footer-link {
-    color: #007bff;
+    color: var(--accent);
     text-decoration: none;
 }
 
@@ -455,12 +593,34 @@ tbody tr:nth-child(even):hover {
     text-decoration: underline;
 }
 
+.print-only {
+    display: none;
+}
+
 @media print {
+    /* A zero @page margin removes the browser's own header/footer
+       (date/time and title/URL) since it has no margin box left to draw
+       them in. The 15mm page margin is recreated on each .print-unit-page instead. */
+    @page {
+        size: portrait;
+        margin: 0;
+    }
+
+    body > h1,
     .drop-zone,
     .toolbar,
     .tabs,
-    .footer {
+    .footer,
+    .unit-card,
+    .metadata-card,
+    .alarms-card,
+    .modal-overlay,
+    #results {
         display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
     }
 
     .section-content {
@@ -469,12 +629,108 @@ tbody tr:nth-child(even):hover {
 
     body {
         background: white;
+        color: var(--color-black);
     }
 
-    .unit-card,
-    .metadata-card,
-    .alarms-card {
-        box-shadow: none;
+    .print-unit-page {
+        padding: 15mm;
+        page-break-after: always;
+    }
+
+    .print-unit-page:last-child {
+        page-break-after: auto;
+    }
+
+    /* Cover page: min-height accounts for A4 portrait (297mm) minus the
+       15mm top/bottom padding already applied by .print-unit-page. */
+    .print-cover-page {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: calc(297mm - 30mm);
+    }
+
+    .print-cover-title {
+        margin-top: 10mm;
+        border-top: 3px solid var(--accent);
+        padding-top: 20px;
+    }
+
+    .print-cover-boat-type {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--color-gray-3);
+        margin-bottom: 6px;
+    }
+
+    .print-cover-boat-name {
+        font-family: var(--font-heading);
+        font-size: 36px;
+        color: var(--color-black);
+        margin-bottom: 8px;
+    }
+
+    .print-cover-subtitle {
+        font-size: 14px;
+        color: var(--color-gray-3);
+    }
+
+    .print-cover-details {
+        border-top: 1px solid var(--color-gray-4);
+        padding-top: 15px;
+    }
+
+    .print-cover-details div {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        padding: 4px 0;
+    }
+
+    .print-cover-details span:first-child {
+        color: var(--color-gray-3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .print-cover-details span:last-child {
+        color: var(--color-black);
+        font-weight: 600;
+    }
+
+    /* Module pages */
+    .print-unit-page h3 {
+        font-family: var(--font-heading);
+        font-size: 18px;
+        color: var(--color-black);
+        border-bottom: 2px solid var(--accent);
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+    }
+
+    .print-channel-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .print-channel-table th,
+    .print-channel-table td {
+        border: 1px solid #333;
+        padding: 6px 8px;
+        text-align: left;
+    }
+
+    .print-channel-table th {
+        background: var(--color-gray-6);
+    }
+
+    .print-channel-table thead {
+        display: table-header-group;
+    }
+
+    .print-channel-table tr {
         page-break-inside: avoid;
     }
 }

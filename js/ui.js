@@ -123,6 +123,29 @@ function renderProjectAlarms(alarms, autoExpand = false) {
 }
 
 /**
+ * Determine which channel groups should be visible for a given unit type.
+ * Some unit types intentionally hide or limit channel groups (e.g. Connect 50
+ * only exposes its first physical connector group; MCUv1 has no user-facing channels).
+ * @param {Array} channelGroups - Array of channel groups from a parsed unit
+ * @param {string} unitTypeId - The unit's unitTypeId attribute
+ * @returns {Array} Filtered array of channel groups to display
+ */
+export function getVisibleChannelGroups(channelGroups, unitTypeId) {
+    if (unitTypeId === '16' || unitTypeId === '20') {
+        // Connect 50: show only group 1
+        return channelGroups.slice(0, 1);
+    } else if (unitTypeId === '101') {
+        // MCUv1 : show no channels
+        return [];
+    } else if (unitTypeId === '105') {
+        // MCUv2: show groups 1 and 2
+        return channelGroups.slice(0, 2);
+    }
+    // All other units: show all groups
+    return channelGroups;
+}
+
+/**
  * Render channels section
  * @param {Array} channelGroups - Array of channel groups
  * @param {string} unitTypeId - The unit type ID
@@ -134,21 +157,7 @@ function renderChannels(channelGroups, unitTypeId, autoExpand = false) {
         return '';
     }
 
-    // For specific unit types, only show the desired channel groups
-    let groupsToRender;
-    if (unitTypeId === '16' || unitTypeId === '20') {
-        // Connect 50: show only group 1
-        groupsToRender = channelGroups.slice(0, 1);
-    } else if (unitTypeId === '101') {
-        // MCUv1 : show no channels
-        groupsToRender = [];
-    } else if (unitTypeId === '105') {
-        // MCUv2: show groups 1 and 2
-        groupsToRender = channelGroups.slice(0, 2);
-    } else {
-        // All other units: show all groups
-        groupsToRender = channelGroups;
-    }
+    const groupsToRender = getVisibleChannelGroups(channelGroups, unitTypeId);
 
     let totalChannels = 0;
     groupsToRender.forEach(group => {
@@ -247,7 +256,7 @@ export function displayError(message, container) {
  * @param {number} unitCount - Number of units found
  * @returns {string} HTML string
  */
-function renderMetadata(metadata, unitCount = 0) {
+export function renderMetadata(metadata, unitCount = 0) {
     if (!metadata) return '';
 
     return `

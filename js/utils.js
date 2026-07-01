@@ -45,32 +45,48 @@ export function getDirectionColor(direction) {
 /**
  * Generate and download PDF report
  * Uses browser's print to PDF functionality
+ * @param {Array} units - Units to include in the printable channel table
  * @param {Object} metadata - Project metadata
+ * @param {Object} exportDetails - Optional { boatName, boatType, locationsByUnitId, accentColor }
  */
-export function downloadPDF(metadata) {
+export async function downloadPDF(units, metadata, exportDetails = {}) {
     // Store original title
     const originalTitle = document.title;
-    
-    // Set document title for PDF
-    if (metadata && metadata.firmware) {
-        document.title = `EBP Report - Firmware ${metadata.firmware}`;
+
+    // Set document title for PDF - this also feeds the browser's print
+    // header/footer and the default "Save as PDF" filename.
+    document.title = exportDetails.boatName || (metadata && metadata.firmware
+        ? `IO Report - Firmware ${metadata.firmware}`
+        : originalTitle);
+
+    // Override the --accent variable for this print job (falls back to the
+    // default brand accent when no color was chosen in the export modal).
+    if (exportDetails.accentColor) {
+        document.documentElement.style.setProperty('--accent', exportDetails.accentColor);
     }
-    
+
     // Add print-specific class to body
     document.body.classList.add('print-mode');
-    
+
     // Expand all sections before printing
     const allSections = document.querySelectorAll('.section-content');
     const expandIcons = document.querySelectorAll('.expand-icon');
-    
+
     allSections.forEach(section => {
         section.style.display = 'block';
     });
-    
+
     expandIcons.forEach(icon => {
         icon.textContent = '▲';
     });
-    
+
+    // Populate the print-only channel table
+    const printContainer = document.getElementById('printTable');
+    if (printContainer) {
+        const { renderPrintTable } = await import('./print.js');
+        printContainer.innerHTML = renderPrintTable(units, metadata, exportDetails);
+    }
+
     // Trigger print dialog
     window.print();
     
@@ -78,6 +94,9 @@ export function downloadPDF(metadata) {
     setTimeout(() => {
         document.body.classList.remove('print-mode');
         document.title = originalTitle;
+        if (exportDetails.accentColor) {
+            document.documentElement.style.removeProperty('--accent');
+        }
     }, 100);
 }
 
