@@ -181,6 +181,15 @@ h4 {
     font-size: 14px;
 }
 
+.modal-logo-preview {
+    display: block;
+    margin-top: 8px;
+    max-height: 60px;
+    max-width: 100%;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
 .modal-color-list {
     display: flex;
     gap: 12px;
@@ -650,10 +659,23 @@ tbody tr:nth-child(even):hover {
         min-height: calc(297mm - 30mm);
     }
 
+    .print-cover-logo {
+        display: block;
+        height: 100px;
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
+        margin: 0 auto 12px;
+    }
+
     .print-cover-title {
         margin-top: 10mm;
         border-top: 3px solid var(--accent);
         padding-top: 20px;
+    }
+
+    .print-cover-logo + .print-cover-title {
+        margin-top: 12px;
     }
 
     .print-cover-boat-type {
@@ -720,6 +742,10 @@ tbody tr:nth-child(even):hover {
         border: 1px solid #333;
         padding: 6px 8px;
         text-align: left;
+    }
+
+    .print-channel-table thead {
+        font-weight: 700;
     }
 
     .print-channel-table th {

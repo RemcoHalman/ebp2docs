@@ -16,7 +16,7 @@ import { getVisibleChannelGroups } from './ui.js';
  * @returns {string} HTML string
  */
 export function renderPrintTable(units, metadata, exportDetails = {}) {
-    const { boatName = '', boatType = '', locationsByUnitId = {} } = exportDetails;
+    const { boatName = '', boatType = '', locationsByUnitId = {}, logoDataUrl = '' } = exportDetails;
 
     // WDU/MFD units (unitTypeId 200), MCUv1 units (unitTypeId 101), and MCUv2 units (unitTypeId 105) have no physical channels worth documenting - exclude them.
     const printableUnits = units.filter(unit => 
@@ -25,7 +25,7 @@ export function renderPrintTable(units, metadata, exportDetails = {}) {
         unit.unitTypeId !== '105'
     );
 
-    let html = renderCoverPage(boatName, boatType, metadata, printableUnits.length);
+    let html = renderCoverPage(boatName, boatType, metadata, printableUnits.length, logoDataUrl);
 
     printableUnits.forEach(unit => {
         html += renderUnitPage(unit, locationsByUnitId[String(unit.id)] || '');
@@ -43,11 +43,14 @@ export function renderPrintTable(units, metadata, exportDetails = {}) {
  * @param {number} unitCount - Number of units included in the report
  * @returns {string} HTML string
  */
-function renderCoverPage(boatName, boatType, metadata, unitCount) {
+function renderCoverPage(boatName, boatType, metadata, unitCount, logoDataUrl = '') {
     const today = new Date().toLocaleDateString();
 
     let html = '<div class="print-unit-page print-cover-page">';
     html += '<div class="print-cover-title">';
+    if (logoDataUrl) {
+        html += `<img class="print-cover-logo" src="${escapeHtml(logoDataUrl)}" alt="Logo">`;
+    }
     if (boatType) html += `<div class="print-cover-boat-type">${escapeHtml(boatType)}</div>`;
     html += `<h1 class="print-cover-boat-name">${escapeHtml(boatName || 'Channel & Wiring Documentation')}</h1>`;
     if (boatName) html += '<div class="print-cover-subtitle">EmpirBus Channel &amp; IO Documentation</div>';

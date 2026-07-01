@@ -70,6 +70,11 @@
                 <input type="text" id="boatType" placeholder="e.g. Sunseeker 65">
             </div>
             <div class="modal-field">
+                <label for="boatLogo">Logo (optional, cover page only)</label>
+                <input type="file" id="boatLogo" accept="image/*">
+                <img id="boatLogoPreview" class="modal-logo-preview hidden" alt="Logo preview">
+            </div>
+            <div class="modal-field">
                 <label>Accent color</label>
                 <div class="modal-color-list" id="modalColorList">
                     <button type="button" class="modal-color-swatch selected" data-color="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button>
@@ -118,11 +123,31 @@
         const modalUnitList = document.getElementById('modalUnitList');
         const boatNameInput = document.getElementById('boatName');
         const boatTypeInput = document.getElementById('boatType');
+        const boatLogoInput = document.getElementById('boatLogo');
+        const boatLogoPreview = document.getElementById('boatLogoPreview');
         const modalColorList = document.getElementById('modalColorList');
         const exportModalCancel = document.getElementById('exportModalCancel');
         const exportModalConfirm = document.getElementById('exportModalConfirm');
 
         let selectedAccentColor = modalColorList.querySelector('.modal-color-swatch.selected').dataset.color;
+        // Logo is held in memory only for this export - never persisted to disk/storage.
+        let logoDataUrl = '';
+
+        boatLogoInput.addEventListener('change', () => {
+            const file = boatLogoInput.files[0];
+            if (!file) {
+                logoDataUrl = '';
+                boatLogoPreview.classList.add('hidden');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                logoDataUrl = e.target.result;
+                boatLogoPreview.src = logoDataUrl;
+                boatLogoPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
 
         modalColorList.addEventListener('click', (e) => {
             const swatch = e.target.closest('.modal-color-swatch');
@@ -314,10 +339,23 @@
             exportModalOverlay.classList.add('hidden');
         }
 
-        exportModalCancel.addEventListener('click', closeExportModal);
+        function resetLogoInput() {
+            boatLogoInput.value = '';
+            logoDataUrl = '';
+            boatLogoPreview.src = '';
+            boatLogoPreview.classList.add('hidden');
+        }
+
+        exportModalCancel.addEventListener('click', () => {
+            closeExportModal();
+            resetLogoInput();
+        });
 
         exportModalOverlay.addEventListener('click', (e) => {
-            if (e.target === exportModalOverlay) closeExportModal();
+            if (e.target === exportModalOverlay) {
+                closeExportModal();
+                resetLogoInput();
+            }
         });
 
         exportModalConfirm.addEventListener('click', () => {
@@ -331,8 +369,11 @@
                 locationsByUnitId[unitId] = location;
             });
 
+            const logoForExport = logoDataUrl;
+
             closeExportModal();
-            downloadPDF(allUnits, currentMetadata, { boatName, boatType, locationsByUnitId, accentColor: selectedAccentColor });
+            resetLogoInput();
+            downloadPDF(allUnits, currentMetadata, { boatName, boatType, locationsByUnitId, accentColor: selectedAccentColor, logoDataUrl: logoForExport });
         });
     </script>
 </body>
