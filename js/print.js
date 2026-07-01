@@ -84,7 +84,7 @@ function renderUnitPage(unit, location) {
 
     return `
         <div class="print-unit-page">
-            <h3>${escapeHtml(unit.name)} (Unit ID: ${escapeHtml(unit.id)})${locationSuffix}</h3>
+            <h3>Unit ID: ${escapeHtml(unit.id)}${locationSuffix}</h3>
             <table class="print-channel-table">
                 <thead>
                     <tr>
